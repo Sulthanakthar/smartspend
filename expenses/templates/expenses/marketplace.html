@@ -1,0 +1,238 @@
+{% extends 'expenses/base.html' %}
+{% load static %}
+{% block title %}Fintech Marketplace - SmartSpend{% endblock %}
+{% block page_title %}Fintech Marketplace{% endblock %}
+
+{% block content %}
+<div class="support-container" style="max-width: 1100px; margin: 0 auto;">
+    <!-- Banner Card -->
+    <div class="glass-panel" style="padding: 32px; margin-bottom: 24px; text-align: center; background: linear-gradient(135deg, rgba(6, 182, 212, 0.07) 0%, rgba(99, 102, 241, 0.03) 100%);">
+        <h3 style="font-size: 26px; font-weight: 800; margin-bottom: 8px;">Explore Our <span class="gradient-text" style="background: linear-gradient(135deg, #06b6d4 0%, #6366f1 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Financial Ecosystem</span></h3>
+        <p style="color: var(--text-secondary); max-width: 650px; margin: 0 auto 20px; font-size: 14px;">Connect third-party tax tools, apply for premium credit cards, and integrate enterprise productivity software to automate your financial workflows.</p>
+        
+        <!-- Search bar -->
+        <div style="position: relative; max-width: 500px; margin: 0 auto;">
+            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 16px;"></i>
+            <input type="text" id="marketplace-search" placeholder="Search integrations, tax tools, and cards..." onkeyup="filterMarketplace()" style="width: 100%; padding: 12px 16px 12px 48px; border-radius: 30px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; outline: none; transition: var(--transition);">
+        </div>
+    </div>
+
+    <!-- Category Filters -->
+    <div style="display: flex; gap: 12px; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); overflow-x: auto;">
+        <button id="cat-all-btn" class="btn btn-primary" onclick="filterCategory('all')" style="border-radius: 30px; font-size: 12px; padding: 6px 16px;">All Listings</button>
+        <button id="cat-finance-btn" class="btn btn-secondary" onclick="filterCategory('finance')" style="border-radius: 30px; font-size: 12px; padding: 6px 16px;">Financial Services</button>
+        <button id="cat-productivity-btn" class="btn btn-secondary" onclick="filterCategory('productivity')" style="border-radius: 30px; font-size: 12px; padding: 6px 16px;">Productivity Tools</button>
+        <button id="cat-partner-btn" class="btn btn-secondary" onclick="filterCategory('partner')" style="border-radius: 30px; font-size: 12px; padding: 6px 16px;">Partner Programs</button>
+    </div>
+
+    <!-- Listings Grid -->
+    <div class="marketplace-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; margin-bottom: 40px;">
+        
+        <!-- Listing 1 (Static Referral Offer) -->
+        <div class="glass-panel marketplace-card" style="padding: 24px; display: flex; flex-direction: column; height: 100%;" data-category="partner" data-tags="credit card cashback bank platinum gold offer">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(99, 102, 241, 0.1); display: flex; align-items: center; justify-content: center; font-size: 24px;">💳</div>
+                <span class="badge badge-primary" style="background: rgba(99,102,241,0.1); color: var(--color-primary); border: 1px solid rgba(99,102,241,0.2); font-size: 9px; padding: 2px 8px; border-radius: 20px; text-transform: uppercase;">Partner</span>
+            </div>
+            <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 8px;">SmartSpend Platinum Credit Card</h4>
+            <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; flex-grow: 1; margin-bottom: 20px;">Get 5% unlimited cashback on dining and groceries, with direct real-time transaction syncing straight into your SmartSpend dashboard.</p>
+            <button onclick="openPromoModal('SmartSpend Platinum Credit Card', 'Apply for our co-branded Platinum Card to get 5% cashback on all categories. Pre-approved for Premium users with a 10-second check.', 'https://www.hdfcbank.com')" class="btn btn-primary" style="width: 100%; justify-content: center; border-radius: 8px; font-size: 12px; padding: 8px;">Learn More & Apply</button>
+        </div>
+
+        <!-- Dynamic Listings from Database -->
+        {% for product in products %}
+        <div class="glass-panel marketplace-card" style="padding: 24px; display: flex; flex-direction: column; height: 100%;" data-category="{% if product.category == 'Software' %}finance{% else %}partner{% endif %}" data-tags="{{ product.name|lower }} {{ product.description|lower }} {{ product.category|lower }} integration sync">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                <div style="width: 48px; height: 48px; border-radius: 12px; background: {% if product.category == 'Software' %}rgba(16, 185, 129, 0.1){% else %}rgba(245, 158, 11, 0.1){% endif %}; display: flex; align-items: center; justify-content: center; font-size: 24px;">
+                    {% if "Tax" in product.name %}📝{% elif "Slack" in product.name %}💬{% elif "QuickBooks" in product.name %}📊{% elif "Mutual Fund" in product.name %}📈{% elif "Insurance" in product.name %}🛡️{% else %}🎁{% endif %}
+                </div>
+                <span class="badge {% if product.category == 'Software' %}badge-success{% else %}badge-warning{% endif %}" style="background: {% if product.category == 'Software' %}rgba(16,185,129,0.1){% else %}rgba(245,158,11,0.1){% endif %}; color: {% if product.category == 'Software' %}var(--color-success){% else %}var(--color-warning){% endif %}; border: 1px solid {% if product.category == 'Software' %}rgba(16,185,129,0.2){% else %}rgba(245,158,11,0.2){% endif %}; font-size: 9px; padding: 2px 8px; border-radius: 20px; text-transform: uppercase;">{{ product.category }}</span>
+            </div>
+            <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 8px;">{{ product.name }}</h4>
+            <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; flex-grow: 1; margin-bottom: 20px;">{{ product.description }}</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16.5px;">
+                <span style="font-size: 12.5px; color: var(--text-muted); font-weight: 500;">Provider: {{ product.vendor.company_name }}</span>
+                <span style="font-size: 17px; font-weight: 800; color: var(--color-primary);">₹{{ product.price }}</span>
+            </div>
+            <button onclick="openPurchaseModal('{{ product.product_id }}', '{{ product.name|escapejs }}', '{{ product.description|escapejs }}', '{{ product.price }}')" class="btn btn-primary" style="width: 100%; justify-content: center; border-radius: 8px; font-size: 12px; padding: 8px;">Connect & Purchase</button>
+        </div>
+        {% empty %}
+        <div style="grid-column: 1/-1; text-align: center; padding: 48px; color: var(--text-muted);">
+            <i class="fa-solid fa-folder-open" style="font-size: 40px; margin-bottom: 16px; display: block;"></i>
+            No marketplace items found in the database.
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Details Modal Overlay -->
+<div class="modal-overlay" id="promo-modal" style="display: none; align-items: center; justify-content: center; z-index: 10000; background: rgba(9, 13, 22, 0.75); backdrop-filter: blur(5px);">
+    <div class="glass-panel" style="max-width: 500px; width: 90%; padding: 32px; border-radius: 20px; position: relative; border: 1px solid var(--border-color); box-shadow: var(--shadow-card); background: var(--bg-card); text-align: center;">
+        <span onclick="closePromoModal()" style="position: absolute; right: 20px; top: 16px; font-size: 24px; cursor: pointer; color: var(--text-muted);">&times;</span>
+        
+        <div style="font-size: 48px; margin-bottom: 16px;" id="modal-promo-icon">🎁</div>
+        <h4 id="modal-promo-title" style="font-size: 20px; font-weight: 800; margin-bottom: 12px;">Partner Offer</h4>
+        <p id="modal-promo-desc" style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 24px;">Details about this premium integration partner program.</p>
+        
+        <div style="display: flex; gap: 12px; justify-content: center;">
+            <button onclick="closePromoModal()" class="btn btn-secondary" style="border-radius: 8px; font-size: 12px; padding: 8px 16px;">Cancel</button>
+            <a id="modal-promo-link" href="#" target="_blank" class="btn btn-primary" style="border-radius: 8px; font-size: 12px; padding: 8px 24px; text-decoration: none; display: inline-flex; align-items: center;">
+                Go to Partner Website <i class="fa-solid fa-up-right-from-square" style="margin-left: 8px; font-size: 10px;"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Purchase Modal Overlay -->
+<div class="modal-overlay" id="purchase-modal" style="display: none; align-items: center; justify-content: center; z-index: 10000; background: rgba(9, 13, 22, 0.75); backdrop-filter: blur(5px);">
+    <div class="glass-panel" style="max-width: 500px; width: 90%; padding: 32px; border-radius: 20px; position: relative; border: 1px solid var(--border-color); box-shadow: var(--shadow-card); background: var(--bg-card); text-align: center;">
+        <span onclick="closePurchaseModal()" style="position: absolute; right: 20px; top: 16px; font-size: 24px; cursor: pointer; color: var(--text-muted);">&times;</span>
+        
+        <div style="font-size: 48px; margin-bottom: 16px;" id="modal-purchase-icon">🛒</div>
+        <h4 id="modal-purchase-title" style="font-size: 20px; font-weight: 800; margin-bottom: 12px;">Purchase Integration</h4>
+        <p id="modal-purchase-desc" style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 24px;">Details about this integration purchase.</p>
+        
+        <div style="padding: 16px; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 14px; color: var(--text-secondary);">Total Price:</span>
+                <span id="modal-purchase-price" style="font-size: 20px; font-weight: 800; color: var(--color-primary);">₹0.00</span>
+            </div>
+        </div>
+
+        <input type="hidden" id="modal-purchase-id" value="">
+        
+        <div style="display: flex; gap: 12px; justify-content: center;">
+            <button onclick="closePurchaseModal()" class="btn btn-secondary" style="border-radius: 8px; font-size: 12px; padding: 8px 16px;">Cancel</button>
+            <button onclick="executePurchase()" class="btn btn-primary" style="border-radius: 8px; font-size: 12px; padding: 8px 24px; display: inline-flex; align-items: center; border: none;">
+                Confirm Purchase <i class="fa-solid fa-cart-shopping" style="margin-left: 8px; font-size: 10px;"></i>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function filterMarketplace() {
+        const query = document.getElementById('marketplace-search').value.toLowerCase().trim();
+        const cards = document.querySelectorAll('.marketplace-card');
+        
+        cards.forEach(card => {
+            const tags = card.getAttribute('data-tags') + " " + card.innerText.toLowerCase();
+            if (tags.includes(query)) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+
+    function filterCategory(category) {
+        // Update active buttons styling
+        const btns = ['all', 'finance', 'productivity', 'partner'];
+        btns.forEach(btn => {
+            const el = document.getElementById(`cat-${btn}-btn`);
+            if (el) {
+                if (btn === category) {
+                    el.className = 'btn btn-primary';
+                } else {
+                    el.className = 'btn btn-secondary';
+                }
+            }
+        });
+
+        // Toggle cards
+        const cards = document.querySelectorAll('.marketplace-card');
+        cards.forEach(card => {
+            const cardCat = card.getAttribute('data-category');
+            if (category === 'all' || cardCat === category) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+
+    function openPromoModal(title, description, linkUrl) {
+        document.getElementById('modal-promo-title').innerText = title;
+        document.getElementById('modal-promo-desc').innerText = description;
+        document.getElementById('modal-promo-link').href = linkUrl;
+        
+        // Auto-assign matching icon
+        const iconEl = document.getElementById('modal-promo-icon');
+        if (title.includes('Card')) iconEl.innerText = '💳';
+        else if (title.includes('Tax')) iconEl.innerText = '📝';
+        else if (title.includes('Slack')) iconEl.innerText = '💬';
+        else if (title.includes('QuickBooks')) iconEl.innerText = '📊';
+        else if (title.includes('HDFC')) iconEl.innerText = '📈';
+        else if (title.includes('Allianz')) iconEl.innerText = '🛡️';
+        else iconEl.innerText = '🎁';
+
+        document.getElementById('promo-modal').style.display = 'flex';
+    }
+
+    function closePromoModal() {
+        document.getElementById('promo-modal').style.display = 'none';
+    }
+
+    function openPurchaseModal(id, title, desc, price) {
+        document.getElementById('modal-purchase-id').value = id;
+        document.getElementById('modal-purchase-title').innerText = title;
+        document.getElementById('modal-purchase-desc').innerText = desc;
+        document.getElementById('modal-purchase-price').innerText = '₹' + parseFloat(price).toFixed(2);
+        
+        const iconEl = document.getElementById('modal-purchase-icon');
+        if (title.includes('Tax')) iconEl.innerText = '📝';
+        else if (title.includes('Slack')) iconEl.innerText = '💬';
+        else if (title.includes('QuickBooks')) iconEl.innerText = '📊';
+        else if (title.includes('Mutual Fund')) iconEl.innerText = '📈';
+        else if (title.includes('Allianz')) iconEl.innerText = '🛡️';
+        else iconEl.innerText = '🛒';
+
+        document.getElementById('purchase-modal').style.display = 'flex';
+    }
+
+    function closePurchaseModal() {
+        document.getElementById('purchase-modal').style.display = 'none';
+    }
+
+    function executePurchase() {
+        const productId = document.getElementById('modal-purchase-id').value;
+        const purchaseBtn = document.querySelector('#purchase-modal .btn-primary');
+        const origHtml = purchaseBtn.innerHTML;
+        
+        purchaseBtn.disabled = true;
+        purchaseBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+
+        const formData = new FormData();
+        formData.append('product_id', productId);
+
+        fetch('/api/marketplace/order/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            purchaseBtn.disabled = false;
+            purchaseBtn.innerHTML = origHtml;
+            closePurchaseModal();
+
+            if (data.success) {
+                alert('🎉 Purchase Successful!\n\nThe integration has been connected, and the purchase price has been logged as an expense in your dashboard. WhatsApp and platform notifications have been dispatched to you, the seller, and the platform admin.');
+                window.location.reload();
+            } else {
+                alert('❌ Purchase Failed: ' + data.error);
+            }
+        })
+        .catch(error => {
+            purchaseBtn.disabled = false;
+            purchaseBtn.innerHTML = origHtml;
+            closePurchaseModal();
+            alert('❌ An error occurred during checkout: ' + error);
+        });
+    }
+</script>
+{% endblock %}

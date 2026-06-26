@@ -1,0 +1,36 @@
+{
+  "name": "SmartSpend Monthly Expense Manager",
+  "short_name": "SmartSpend",
+  "description": "AI-Powered Voice-Based Monthly Expense Management Web Application.",
+  "start_url": "/dashboard/",
+  "display": "standalone",
+  "background_color": "#0b0f19",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1077/1077976.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1077/1077976.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "View Dashboard",
+      "url": "/dashboard/",
+      "icon": "https://cdn-icons-png.flaticon.com/512/1077/1077976.png"
+    },
+    {
+      "name": "Add Expense",
+      "url": "/dashboard/?action=add",
+      "icon": "https://cdn-icons-png.flaticon.com/512/1077/1077976.png"
+    }
+  ]
+}

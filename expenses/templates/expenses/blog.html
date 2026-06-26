@@ -1,0 +1,50 @@
+{% extends 'expenses/base.html' %}
+{% block title %}FinTech Insights Blog - SmartSpend{% endblock %}
+{% block page_title %}Marketing & FinTech Blog{% endblock %}
+
+{% block content %}
+<div class="support-container" style="max-width: 1000px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 40px;">
+        <h2 style="font-size: 32px; font-weight: 800; margin-bottom: 12px;">The SmartSpend <span class="gradient-text">Journal</span></h2>
+        <p style="color: var(--text-secondary); max-width: 600px; margin: 0 auto; font-size: 14px; line-height: 1.6;">
+            Expert advice, budget strategies, product updates, and cases of how to optimize personal and business savings.
+        </p>
+    </div>
+
+    <!-- Blog list grid -->
+    <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 28px; margin-bottom: 40px;">
+        {% for post in posts %}
+        <div class="glass-panel" style="display: flex; flex-direction: column; overflow: hidden; border-radius: 20px; transition: var(--transition); border-color: rgba(99,102,241,0.15);">
+            <div style="padding: 28px; display: flex; flex-direction: column; gap: 14px; flex-grow: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px;">
+                    <span class="badge" style="background: rgba(99, 102, 241, 0.15); color: var(--color-primary); text-transform: uppercase;">{{ post.get_category_display }}</span>
+                    <span style="color: var(--text-muted);">{{ post.created_at|date:"M d, Y" }}</span>
+                </div>
+                
+                <h3 style="font-size: 18px; font-weight: 700; margin: 0;">
+                    <a href="{% url 'blog_detail' post.slug %}" style="text-decoration: none; color: var(--text-primary); transition: var(--transition);">
+                        {{ post.title }}
+                    </a>
+                </h3>
+                
+                <p style="color: var(--text-secondary); font-size: 13px; line-height: 1.6; margin: 0;">
+                    {{ post.content|slice:":120" }}...
+                </p>
+            </div>
+            
+            <div style="padding: 16px 28px; background: rgba(255,255,255,0.02); border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 12px; color: var(--text-secondary); font-weight: 600;">By {{ post.author.username }}</span>
+                <a href="{% url 'blog_detail' post.slug %}" style="text-decoration: none; color: var(--color-primary); font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 4px;">
+                    Read Article <i class="fa-solid fa-arrow-right-long"></i>
+                </a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="glass-panel" style="grid-column: 1 / -1; padding: 60px; text-align: center; color: var(--text-secondary); font-style: italic;">
+            <i class="fa-solid fa-newspaper" style="font-size: 48px; color: var(--text-muted); margin-bottom: 16px;"></i>
+            <p>No blog articles published yet. Stay tuned!</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

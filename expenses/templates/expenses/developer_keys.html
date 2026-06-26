@@ -1,0 +1,134 @@
+{% extends 'expenses/base.html' %}
+{% block title %}Developer API Keys - SmartSpend{% endblock %}
+{% block page_title %}Developer Access Console{% endblock %}
+
+{% block content %}
+<div class="support-container" style="max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px;">
+    <!-- Intro Header -->
+    <div class="glass-panel" style="padding: 28px; border-radius: 16px;">
+        <h4 style="font-size: 18px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-code" style="color: var(--color-primary);"></i>
+            SmartSpend REST API Keys
+        </h4>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.6;">
+            Create and manage secure API keys to integrate SmartSpend telemetry, expense tracking, and budget alerts directly into your internal billing systems, dashboard widgets, or third-party webhooks.
+        </p>
+
+        <!-- Generate key control -->
+        <form id="create-key-form" onsubmit="generateKey(event)" style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
+            <div style="flex-grow: 1; min-width: 250px;">
+                <label for="key-name" style="display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">API Key Description / Name</label>
+                <input type="text" id="key-name" class="form-control" placeholder="e.g. ERP integration key" required style="border-radius: 8px;">
+            </div>
+            <button type="submit" class="btn btn-primary" style="height: 42px; border-radius: 8px;"><i class="fa-solid fa-key"></i> Generate API Key</button>
+        </form>
+    </div>
+
+    <!-- Display New Key Alert (Shown only once after generation) -->
+    {% if new_key %}
+    <div class="glass-panel" style="padding: 24px; border-radius: 16px; border-color: var(--color-warning); background: rgba(245, 158, 11, 0.05);">
+        <h4 style="font-size: 15px; font-weight: 700; color: var(--color-warning); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            API Key Generated Successfully!
+        </h4>
+        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;">
+            Make sure to copy your developer API key now. You will not be able to see it again for security reasons.
+        </p>
+        <div style="display: flex; gap: 8px; align-items: center; background: var(--bg-primary); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-color); font-family: monospace; font-size: 13px; font-weight: 700; color: var(--color-warning);">
+            <span id="new-key-value" style="flex-grow: 1; word-break: break-all;">{{ new_key }}</span>
+            <button onclick="copyToClipboard()" class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px; border-radius: 4px;"><i class="fa-solid fa-copy"></i> Copy</button>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Keys list -->
+    <div class="glass-panel" style="padding: 28px; border-radius: 16px;">
+        <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 20px;">Your Active Developer Keys</h4>
+        <div class="data-table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Key Description</th>
+                        <th>Prefix</th>
+                        <th>Rate Limit</th>
+                        <th>Created Date</th>
+                        <th style="text-align: right;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for key in keys %}
+                    <tr id="key-row-{{ key.id }}">
+                        <td style="font-weight: 600;">{{ key.name }}</td>
+                        <td style="font-family: monospace;">{{ key.key_prefix }}...</td>
+                        <td>{{ key.rate_limit }} req/min</td>
+                        <td>{{ key.created_at|date:"Y-m-d H:i" }}</td>
+                        <td style="text-align: right;">
+                            <button onclick="revokeKey('{{ key.id }}')" class="btn btn-danger" style="padding: 6px 12px; font-size: 12px; border-radius: 6px;">Revoke</button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px; font-style: italic;">No active developer API keys found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    function generateKey(event) {
+        event.preventDefault();
+        const name = document.getElementById('key-name').value.trim();
+        
+        fetch("{% url 'create_developer_key_ajax' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: new URLSearchParams({ name: name })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error generating API Key: ' + data.error);
+            }
+        });
+    }
+
+    function revokeKey(keyId) {
+        if (!confirm('Are you sure you want to revoke this developer API key? It will deactivate instantly.')) return;
+        
+        fetch("{% url 'revoke_developer_key_ajax' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: new URLSearchParams({ key_id: keyId })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                alert('API Key revoked successfully.');
+                location.reload();
+            } else {
+                alert('Error revoking key: ' + data.error);
+            }
+        });
+    }
+
+    function copyToClipboard() {
+        const text = document.getElementById('new-key-value').innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            alert('API Key copied to clipboard!');
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+        });
+    }
+</script>
+{% endblock %}

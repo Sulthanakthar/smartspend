@@ -1,0 +1,104 @@
+{% extends 'expenses/base.html' %}
+{% load static %}
+{% block title %}Settings - SmartSpend{% endblock %}
+{% block page_title %}Application Settings{% endblock %}
+
+{% block content %}
+<div class="glass-panel" style="padding: 32px; max-width: 600px; margin: 0 auto;">
+    <h4 style="font-size: 18px; font-weight: 700; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;"><i class="fa-solid fa-sliders" style="color: var(--color-primary); margin-right: 8px;"></i> User Preferences</h4>
+    
+    <form method="POST">
+        {% csrf_token %}
+        
+        <!-- Theme Setting -->
+        <div class="form-group">
+            <label for="theme">Display Theme</label>
+            <select name="theme" id="theme" class="form-select">
+                <option value="dark" {% if prefs.theme == 'dark' %}selected{% endif %}>Dark Mode (Default)</option>
+                <option value="light" {% if prefs.theme == 'light' %}selected{% endif %}>Light Mode</option>
+            </select>
+        </div>
+        
+        <!-- Currency Setting -->
+        <div class="form-group">
+            <label for="currency">Primary Currency</label>
+            <select name="currency" id="currency" class="form-select">
+                {% for code, name in currency_choices %}
+                    <option value="{{ code }}" {% if prefs.currency == code %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <!-- Language Selection -->
+        <div class="form-group">
+            <label for="language">Voice Input / TTS Language</label>
+            <select name="language" id="language" class="form-select">
+                <option value="en" {% if prefs.language == 'en' %}selected{% endif %}>English (US/UK)</option>
+                <option value="es" {% if prefs.language == 'es' %}selected{% endif %}>Spanish (Español)</option>
+                <option value="fr" {% if prefs.language == 'fr' %}selected{% endif %}>French (Français)</option>
+                <option value="hi" {% if prefs.language == 'hi' %}selected{% endif %}>Hindi (हिंदी)</option>
+            </select>
+        </div>
+        
+        <!-- Voice Rate (TTS Feedback Speed) -->
+        <div class="form-group">
+            <label for="voice_rate">Voice Synthesizer Speed ({{ prefs.voice_rate }}x)</label>
+            <input type="range" name="voice_rate" id="voice_rate" class="form-range form-control" min="0.5" max="2.0" step="0.1" value="{{ prefs.voice_rate }}" oninput="document.getElementById('voice-rate-label').innerText = this.value + 'x'">
+            <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                <span>0.5x (Slow)</span>
+                <span id="voice-rate-label" style="font-weight: 600; color: var(--color-primary);">{{ prefs.voice_rate }}x</span>
+                <span>2.0x (Fast)</span>
+            </div>
+        </div>
+        
+        <!-- Timezone Selection -->
+        <div class="form-group">
+            <label for="timezone">Preferred Timezone</label>
+            <select name="timezone" id="timezone" class="form-select">
+                {% for code, name in timezones %}
+                    <option value="{{ code }}" {% if profile.timezone == code %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <!-- Notification Settings -->
+        <div class="form-group form-check" style="margin-top: 24px; margin-bottom: 12px;">
+            <input type="checkbox" name="notifications_enabled" id="notifications_enabled" class="form-check-input" {% if prefs.notifications_enabled %}checked{% endif %}>
+            <label for="notifications_enabled" style="margin-bottom: 0; cursor: pointer;">Enable Overspending & Budget Alert Notifications</label>
+        </div>
+        
+        <!-- MFA Configuration -->
+        <div class="form-group form-check" style="margin-bottom: 24px;">
+            <input type="checkbox" name="mfa_enabled" id="mfa_enabled" class="form-check-input" {% if profile.mfa_enabled %}checked{% endif %}>
+            <label for="mfa_enabled" style="margin-bottom: 0; cursor: pointer; font-weight: 600; color: var(--color-primary);">Enable Multi-Factor Authentication (MFA via OTP)</label>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-bottom: 24px;">
+            <i class="fa-solid fa-floppy-disk"></i> Save Preferences
+        </button>
+    </form>
+
+    <!-- GDPR compliance section -->
+    <div style="margin-top: 32px; border-top: 1px solid var(--border-color); padding-top: 24px;">
+        <h4 style="font-size: 16px; font-weight: 700; color: var(--color-warning); margin-bottom: 16px;">
+            <i class="fa-solid fa-shield-halved"></i> GDPR Privacy Controls
+        </h4>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">
+            In accordance with GDPR privacy regulations, you have the right to request a copy of all data logged on this platform or purge your account permanently.
+        </p>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <a href="{% url 'gdpr_export_data' %}" class="btn btn-secondary" style="justify-content: center; font-size: 13px;">
+                <i class="fa-solid fa-download"></i> Export Data (JSON)
+            </a>
+            
+            <form method="POST" action="{% url 'gdpr_delete_account' %}" onsubmit="return confirm('WARNING: This will permanently delete your account and all tracked data. This action cannot be undone. Are you sure?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger" style="width: 100%; justify-content: center; font-size: 13px; border: none; padding: 10px;">
+                    <i class="fa-solid fa-trash-can"></i> Purge Account
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

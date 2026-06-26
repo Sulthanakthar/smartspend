@@ -1,0 +1,398 @@
+{% extends 'expenses/base.html' %}
+{% load static %}
+{% block title %}Business Team - SmartSpend{% endblock %}
+{% block page_title %}Team Management Workspace{% endblock %}
+
+{% block content %}
+{% if not is_business %}
+<div class="auth-wrapper" style="min-height: 70vh; display: flex; align-items: center; justify-content: center; padding: 20px;">
+    <div class="auth-card glass-panel" style="max-width: 500px; text-align: center; padding: 40px; border-color: rgba(99, 102, 241, 0.3); background: var(--bg-card); border-radius: 24px; box-shadow: var(--shadow-card);">
+        <div style="font-size: 64px; margin-bottom: 24px;">🏢</div>
+        <h2 style="font-weight: 800; font-size: 24px; margin-bottom: 14px;">Business Plan <span class="gradient-text">Required</span></h2>
+        <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.6; margin-bottom: 28px;">
+            SaaS Team Management, customizable role assignments, expense approval workflows, and shared company budgets are available exclusively on the Business Plan. Upgrade now to empower your workforce.
+        </p>
+        <button onclick="upgradeToBusiness()" class="btn btn-primary" style="width: 100%; justify-content: center; font-size: 15px; font-weight: 700; padding: 12px; border-radius: 12px;">
+            <i class="fa-solid fa-gem"></i> Upgrade to Business (₹1299/mo)
+        </button>
+    </div>
+</div>
+{% else %}
+<div style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+    <div>
+        <h3 style="font-size: 20px; font-weight: 800;">Workspace: <span class="gradient-text">{{ team.name }}</span></h3>
+        <p style="font-size: 12px; color: var(--text-secondary);">Your current role in this workspace is: <strong style="color: var(--color-primary); text-transform: uppercase;">{{ user_role }}</strong></p>
+    </div>
+</div>
+
+<div class="chart-row" style="display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 28px;">
+    <!-- Column 1: Workspace Controls (Add Member & Submit Expense) -->
+    <div style="flex: 1; min-width: 320px; display: flex; flex-direction: column; gap: 24px;">
+        
+        <!-- Add Member Panel (Owners only) -->
+        {% if user_role == 'owner' %}
+        <div class="glass-panel" style="padding: 24px; border-radius: 16px;">
+            <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-user-plus" style="color: var(--color-primary);"></i>
+                Add Team Member
+            </h4>
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label for="add-member-username">SmartSpend Username</label>
+                <input type="text" id="add-member-username" class="form-control" placeholder="Enter username..." style="padding: 10px; border-radius: 8px;">
+            </div>
+            <button onclick="addTeamMember()" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 10px; border-radius: 8px;">
+                <i class="fa-solid fa-plus"></i> Add to Team
+            </button>
+        </div>
+        {% endif %}
+
+        <!-- Submit Team Expense Panel -->
+        <div class="glass-panel" style="padding: 24px; border-radius: 16px;">
+            <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-file-invoice-dollar" style="color: var(--color-success);"></i>
+                Log Team Transaction
+            </h4>
+            <p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 16px;">
+                {% if user_role == 'owner' or user_role == 'manager' %}
+                As an <strong>{{ user_role }}</strong>, your expense will be logged and approved instantly.
+                {% else %}
+                Logged as a pending submission. Needs Manager or Owner approval.
+                {% endif %}
+            </p>
+            
+            <form id="team-expense-form" onsubmit="submitTeamExpense(event)">
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label for="team-amount">Amount ({{ prefs.currency_symbol }})</label>
+                    <input type="number" step="0.01" id="team-amount" class="form-control" placeholder="0.00" required style="border-radius: 8px;">
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label for="team-category">Category</label>
+                    <select id="team-category" class="form-select" style="border-radius: 8px;">
+                        <option value="Food">Food</option>
+                        <option value="Travel">Travel</option>
+                        <option value="Rent">Rent</option>
+                        <option value="Bills">Bills</option>
+                        <option value="Shopping">Shopping</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Health">Health</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label for="team-description">Description</label>
+                    <input type="text" id="team-description" class="form-control" placeholder="e.g. Office catering" required style="border-radius: 8px;">
+                </div>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="team-date">Transaction Date</label>
+                    <input type="date" id="team-date" class="form-control" required style="border-radius: 8px;">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 10px; border-radius: 8px; background: linear-gradient(135deg, var(--color-success) 0%, #047857 100%); border-color: var(--color-success);">
+                    <i class="fa-solid fa-paper-plane"></i> Submit Workspace Expense
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Column 2: Members & Role Management -->
+    <div class="glass-panel" style="padding: 24px; flex: 2; min-width: 360px; border-radius: 16px; height: fit-content;">
+        <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-users" style="color: var(--color-primary);"></i>
+            Workspace Members & Roles
+        </h4>
+        
+        <div class="data-table-container">
+            <table class="data-table" id="team-members-table">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Email Address</th>
+                        <th>Role</th>
+                        {% if user_role == 'owner' %}<th>Action</th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Display Team Owner first -->
+                    <tr>
+                        <td style="font-weight: 600;">{{ team.owner.username }}</td>
+                        <td>{{ team.owner.email }}</td>
+                        <td><span class="badge badge-primary" style="background: rgba(99,102,241,0.15); color: var(--color-primary); border: 1px solid rgba(99,102,241,0.3); padding: 4px 10px; border-radius: 20px; text-transform: uppercase; font-size: 10px;">Owner</span></td>
+                        {% if user_role == 'owner' %}<td>-</td>{% endif %}
+                    </tr>
+                    
+                    {% for membership in team_memberships %}
+                    {% if membership.user != team.owner %}
+                    <tr id="member-row-{{ membership.user.id }}">
+                        <td style="font-weight: 600;">{{ membership.user.username }}</td>
+                        <td>{{ membership.user.email }}</td>
+                        <td>
+                            {% if user_role == 'owner' %}
+                            <select onchange="changeMemberRole('{{ membership.user.id }}', this.value)" class="form-select" style="padding: 4px 8px; font-size: 12px; border-radius: 6px; width: fit-content; background: rgba(255,255,255,0.05); color: var(--text-primary); border: 1px solid var(--border-color);">
+                                <option value="employee" {% if membership.role == 'employee' %}selected{% endif %}>Employee</option>
+                                <option value="manager" {% if membership.role == 'manager' %}selected{% endif %}>Manager</option>
+                            </select>
+                            {% else %}
+                            <span class="badge {% if membership.role == 'manager' %}badge-warning{% else %}badge-secondary{% endif %}" style="text-transform: uppercase; font-size: 10px; padding: 4px 10px; border-radius: 20px;">
+                                {{ membership.role }}
+                            </span>
+                            {% endif %}
+                        </td>
+                        {% if user_role == 'owner' %}
+                        <td>
+                            <button onclick="removeTeamMember('{{ membership.user.id }}')" class="btn btn-danger" style="padding: 4px 10px; font-size: 12px; border-radius: 6px;">
+                                <i class="fa-solid fa-user-minus"></i> Remove
+                            </button>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Row: Pending Approvals (Visible to Manager and Owner only) -->
+{% if user_role == 'owner' or user_role == 'manager' %}
+<div class="glass-panel" style="padding: 28px; margin-bottom: 28px; border-radius: 16px;">
+    <h4 style="font-size: 18px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-hourglass-half" style="color: var(--color-warning);"></i>
+        Pending Workspace Expense Approvals
+    </h4>
+    <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 20px;">Review and process pending transaction claims submitted by team employees.</p>
+    
+    <div class="data-table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Submitted By</th>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for app in pending_approvals %}
+                <tr id="approval-row-{{ app.id }}">
+                    <td style="font-weight: 600;">{{ app.submitted_by.username }}</td>
+                    <td>{{ app.expense_date|date:"Y-m-d" }}</td>
+                    <td><span class="badge badge-{{ app.category|lower }}">{{ app.category }}</span></td>
+                    <td>{{ app.description }}</td>
+                    <td style="font-weight: 700; color: var(--color-danger);">{{ prefs.currency_symbol }}{{ app.amount|floatformat:2 }}</td>
+                    <td>
+                        <button onclick="processApproval('{{ app.id }}', 'approve')" class="btn btn-success" style="padding: 6px 12px; font-size: 12px; border-radius: 8px; margin-right: 8px;">
+                            <i class="fa-solid fa-check"></i> Approve
+                        </button>
+                        <button onclick="processApproval('{{ app.id }}', 'reject')" class="btn btn-danger" style="padding: 6px 12px; font-size: 12px; border-radius: 8px;">
+                            <i class="fa-solid fa-xmark"></i> Reject
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-secondary); font-style: italic; padding: 24px;">No pending expense approvals found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Team Expenses logs -->
+<div class="glass-panel" style="padding: 28px; border-radius: 16px;">
+    <h4 style="font-size: 18px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-network-wired" style="color: var(--color-primary);"></i>
+        Approved Team Expenses Feed
+    </h4>
+    <div class="data-table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Member</th>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for exp in team_expenses %}
+                <tr>
+                    <td style="font-weight: 600;">{{ exp.user.username }}</td>
+                    <td>{{ exp.expense_date|date:"Y-m-d" }}</td>
+                    <td><span class="badge badge-{{ exp.category|lower }}">{{ exp.category }}</span></td>
+                    <td>{{ exp.description }}</td>
+                    <td style="font-weight: 700; color: var(--color-danger);">{{ prefs.currency_symbol }}{{ exp.amount|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-secondary); font-style: italic; padding: 24px;">No shared team expenses recorded yet. Team member activity will show up here.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Autofill date field to today
+    window.addEventListener('load', () => {
+        const dateInput = document.getElementById('team-date');
+        if (dateInput) {
+            dateInput.value = new Date().toISOString().split('T')[0];
+        }
+    });
+
+    function upgradeToBusiness() {
+        fetch("{% url 'upgrade_subscription' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: new URLSearchParams({ tier: 'business' })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                alert('Success! Your workspace is now upgraded to the Business Plan.');
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        });
+    }
+
+    function addTeamMember() {
+        const input = document.getElementById('add-member-username');
+        const username = input.value.trim();
+        if (!username) {
+            alert('Please enter a username.');
+            return;
+        }
+
+        fetch("{% url 'add_team_member_ajax' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: new URLSearchParams({ username: username })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Successfully added ${username} to your team!`);
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        });
+    }
+
+    function removeTeamMember(memberId) {
+        if (!confirm('Are you sure you want to remove this member from your business team workspace?')) return;
+
+        fetch("{% url 'remove_team_member_ajax' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: new URLSearchParams({ member_id: memberId })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                alert('Member removed successfully.');
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        });
+    }
+
+    function changeMemberRole(memberId, role) {
+        fetch("{% url 'change_member_role_ajax' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: new URLSearchParams({ member_id: memberId, role: role })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                alert('Role updated successfully.');
+            } else {
+                alert('Error changing role: ' + data.error);
+                location.reload();
+            }
+        });
+    }
+
+    function submitTeamExpense(event) {
+        event.preventDefault();
+        const amount = document.getElementById('team-amount').value;
+        const category = document.getElementById('team-category').value;
+        const description = document.getElementById('team-description').value;
+        const dateVal = document.getElementById('team-date').value;
+        
+        fetch("{% url 'submit_team_expense_ajax' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: new URLSearchParams({
+                team_id: "{{ team.id }}",
+                amount: amount,
+                category: category,
+                description: description,
+                expense_date: dateVal
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.msg);
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        });
+    }
+
+    function processApproval(approvalId, action) {
+        if (!confirm(`Are you sure you want to ${action} this transaction claim?`)) return;
+        
+        fetch("{% url 'process_team_expense_ajax' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: new URLSearchParams({
+                approval_id: approvalId,
+                action: action
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.msg);
+                location.reload();
+            } else {
+                alert('Error processing request: ' + data.error);
+            }
+        });
+    }
+</script>
+{% endblock %}

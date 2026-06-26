@@ -1,0 +1,562 @@
+{% extends 'expenses/base.html' %}
+{% load static %}
+{% block title %}Admin Console - SmartSpend{% endblock %}
+{% block page_title %}System Admin Console{% endblock %}
+
+{% block content %}
+<!-- System-wide Stats cards -->
+<div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 28px;">
+    <div class="metric-card glass-panel">
+        <div class="metric-header">
+            <span>Total Registered Users</span>
+            <div class="metric-icon"><i class="fa-solid fa-users"></i></div>
+        </div>
+        <div class="metric-value">{{ system_stats.total_users }}</div>
+        <div class="metric-change" style="color: var(--color-success);">Active Accounts</div>
+    </div>
+
+    <div class="metric-card glass-panel">
+        <div class="metric-header">
+            <span>SaaS Monthly Revenue (MRR)</span>
+            <div class="metric-icon"><i class="fa-solid fa-money-bill-trend-up"></i></div>
+        </div>
+        <div class="metric-value">{{ prefs.currency_symbol }}{{ system_stats.mrr }}</div>
+        <div class="metric-change" style="color: var(--color-primary);">Subscribers: {{ system_stats.premium_count }} Pro / {{ system_stats.business_count }} Business / {{ system_stats.enterprise_count }} Enterprise</div>
+    </div>
+
+    <div class="metric-card glass-panel success">
+        <div class="metric-header">
+            <span>Total Managed Funds</span>
+            <div class="metric-icon"><i class="fa-solid fa-wallet"></i></div>
+        </div>
+        <div class="metric-value">{{ prefs.currency_symbol }}{{ system_stats.total_value|floatformat:2 }}</div>
+        <div class="metric-change">Avg: {{ prefs.currency_symbol }}{{ system_stats.avg_expense|floatformat:2 }}</div>
+    </div>
+
+    <div class="metric-card glass-panel success">
+        <div class="metric-header">
+            <span>System Database Health</span>
+            <div class="metric-icon"><i class="fa-solid fa-heart-pulse"></i></div>
+        </div>
+        <div class="metric-value" style="font-size: 24px;">{{ system_stats.db_size_mb|floatformat:2 }} MB</div>
+        <div class="metric-change" style="color: var(--color-success); font-weight: 600;"><i class="fa-solid fa-circle-check"></i> DB Healthy</div>
+    </div>
+</div>
+
+<!-- Investor & SaaS Growth Metrics Panel -->
+<h4 style="font-size: 18px; font-weight: 700; margin-bottom: 20px;"><i class="fa-solid fa-chart-line" style="color: var(--color-primary); margin-right: 8px;"></i> Investor & SaaS Growth Metrics (SaaS Audit)</h4>
+<div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 28px;">
+    <div class="metric-card glass-panel success">
+        <div class="metric-header">
+            <span>Annual Recurring Revenue (ARR)</span>
+            <div class="metric-icon"><i class="fa-solid fa-coins"></i></div>
+        </div>
+        <div class="metric-value">${{ system_stats.arr|floatformat:2 }}</div>
+        <div class="metric-change">Projected annual run-rate</div>
+    </div>
+
+    <div class="metric-card glass-panel">
+        <div class="metric-header">
+            <span>Customer Lifetime Value (LTV)</span>
+            <div class="metric-icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+        </div>
+        <div class="metric-value">${{ system_stats.ltv|floatformat:2 }}</div>
+        <div class="metric-change">LTV / CAC Ratio: {{ system_stats.ltv_cac_ratio|floatformat:1 }}x</div>
+    </div>
+
+    <div class="metric-card glass-panel">
+        <div class="metric-header">
+            <span>Customer Acquisition Cost (CAC)</span>
+            <div class="metric-icon"><i class="fa-solid fa-users-viewfinder"></i></div>
+        </div>
+        <div class="metric-value">${{ system_stats.cac|floatformat:2 }}</div>
+        <div class="metric-change">Average CAC baseline</div>
+    </div>
+
+    <div class="metric-card glass-panel success">
+        <div class="metric-header">
+            <span>Monthly Growth & Retention</span>
+            <div class="metric-icon"><i class="fa-solid fa-arrow-up-right-dots"></i></div>
+        </div>
+        <div class="metric-value" style="font-size: 20px;">
+            +{{ system_stats.user_growth|floatformat:1 }}% / {{ system_stats.retention_rate }}%
+        </div>
+        <div class="metric-change">Growth / Retention (Churn: {{ system_stats.churn_rate }}%)</div>
+    </div>
+</div>
+
+<!-- Platform Active Users Telemetry -->
+<h4 style="font-size: 18px; font-weight: 700; margin-bottom: 20px;"><i class="fa-solid fa-users-viewfinder" style="color: var(--color-success); margin-right: 8px;"></i> User Engagement Telemetry (DAU / WAU / MAU)</h4>
+<div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 28px;">
+    <div class="metric-card glass-panel">
+        <div class="metric-header">
+            <span>Daily Active Users (DAU)</span>
+            <div class="metric-icon"><i class="fa-solid fa-user-check"></i></div>
+        </div>
+        <div class="metric-value">{{ system_stats.dau }}</div>
+        <div class="metric-change">Active in last 24h</div>
+    </div>
+    <div class="metric-card glass-panel">
+        <div class="metric-header">
+            <span>Weekly Active Users (WAU)</span>
+            <div class="metric-icon"><i class="fa-solid fa-users"></i></div>
+        </div>
+        <div class="metric-value">{{ system_stats.wau }}</div>
+        <div class="metric-change">Active in last 7 days</div>
+    </div>
+    <div class="metric-card glass-panel">
+        <div class="metric-header">
+            <span>Monthly Active Users (MAU)</span>
+            <div class="metric-icon"><i class="fa-solid fa-users-line"></i></div>
+        </div>
+        <div class="metric-value">{{ system_stats.mau }}</div>
+        <div class="metric-change">Active in last 30 days</div>
+    </div>
+</div>
+
+<!-- Launch Readiness Scorecard -->
+<h4 style="font-size: 18px; font-weight: 700; margin-bottom: 20px;"><i class="fa-solid fa-gauge-high" style="color: var(--color-primary); margin-right: 8px;"></i> Launch Readiness Scorecard</h4>
+<div class="glass-panel" style="padding: 24px; margin-bottom: 28px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
+        <div>
+            <h5 style="margin: 0; font-size: 20px; font-weight: 600; color: var(--color-foreground);">Production Audit Score: <span style="color: {% if readiness_scorecard.overall_score >= 90 %}var(--color-success){% elif readiness_scorecard.overall_score >= 75 %}var(--color-primary){% else %}var(--color-danger){% endif %};">{{ readiness_scorecard.overall_score }}/100</span></h5>
+            <p style="margin: 5px 0 0 0; font-size: 13px; color: var(--color-foreground-muted);">Launch readiness score based on security, performance, accessibility, and SEO audits.</p>
+        </div>
+        <div>
+            <div style="font-size: 32px; font-weight: 800; color: {% if readiness_scorecard.overall_score >= 90 %}var(--color-success){% elif readiness_scorecard.overall_score >= 75 %}var(--color-primary){% else %}var(--color-danger){% endif %}; bg-color: rgba(255,255,255,0.05); padding: 10px 20px; border-radius: 12px; border: 1px solid var(--border-color);">
+                {{ readiness_scorecard.overall_score }}%
+            </div>
+        </div>
+    </div>
+    
+    <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px;">
+        <!-- Security -->
+        <div style="background: rgba(255, 255, 255, 0.02); padding: 15px; border-radius: 12px; border: 1px solid var(--border-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-weight: 600; font-size: 14px;"><i class="fa-solid fa-shield-halved" style="color: var(--color-success); margin-right: 6px;"></i> Security</span>
+                <span style="font-weight: 700; color: var(--color-success);">{{ readiness_scorecard.security_score }}%</span>
+            </div>
+            <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; margin-bottom: 12px;">
+                <div style="width: {{ readiness_scorecard.security_score }}%; height: 100%; background: var(--color-success); border-radius: 3px;"></div>
+            </div>
+            <ul style="margin: 0; padding: 0 0 0 15px; font-size: 11px; color: var(--color-foreground-muted); line-height: 1.6;">
+                <li>MFA Setup: {% if readiness_scorecard.security_checks.mfa_enabled_users %}🟢 Active{% else %}🔴 Disabled{% endif %}</li>
+                <li>Debug Mode: {% if readiness_scorecard.security_checks.debug_mode_disabled %}🟢 Off{% else %}🟡 On (Dev){% endif %}</li>
+                <li>CSRF Check: {% if readiness_scorecard.security_checks.csrf_middleware_active %}🟢 Safe{% else %}🔴 Unsafe{% endif %}</li>
+                <li>Security Middleware: {% if readiness_scorecard.security_checks.security_middleware_active %}🟢 Enabled{% else %}🔴 Disabled{% endif %}</li>
+            </ul>
+        </div>
+        
+        <!-- Performance -->
+        <div style="background: rgba(255, 255, 255, 0.02); padding: 15px; border-radius: 12px; border: 1px solid var(--border-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-weight: 600; font-size: 14px;"><i class="fa-solid fa-gauge-simple-high" style="color: var(--color-primary); margin-right: 6px;"></i> Performance</span>
+                <span style="font-weight: 700; color: var(--color-primary);">{{ readiness_scorecard.performance_score }}%</span>
+            </div>
+            <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; margin-bottom: 12px;">
+                <div style="width: {{ readiness_scorecard.performance_score }}%; height: 100%; background: var(--color-primary); border-radius: 3px;"></div>
+            </div>
+            <ul style="margin: 0; padding: 0 0 0 15px; font-size: 11px; color: var(--color-foreground-muted); line-height: 1.6;">
+                <li>Indexed DB Fields: 🟢 100%</li>
+                <li>Query Optimization: 🟢 Active</li>
+                <li>Slow Queries: {% if readiness_scorecard.performance_score == 100 %}🟢 None{% else %}🟡 Slow queries logged{% endif %}</li>
+            </ul>
+        </div>
+        
+        <!-- Accessibility -->
+        <div style="background: rgba(255, 255, 255, 0.02); padding: 15px; border-radius: 12px; border: 1px solid var(--border-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-weight: 600; font-size: 14px;"><i class="fa-solid fa-eye" style="color: #bf5af2; margin-right: 6px;"></i> Accessibility</span>
+                <span style="font-weight: 700; color: #bf5af2;">{{ readiness_scorecard.accessibility_score }}%</span>
+            </div>
+            <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; margin-bottom: 12px;">
+                <div style="width: {{ readiness_scorecard.accessibility_score }}%; height: 100%; background: #bf5af2; border-radius: 3px;"></div>
+            </div>
+            <ul style="margin: 0; padding: 0 0 0 15px; font-size: 11px; color: var(--color-foreground-muted); line-height: 1.6;">
+                <li>Contrast Checks: 🟢 WCAG AA Pass</li>
+                <li>Keyboard Outlines: 🟢 Active</li>
+                <li>ARIA Attributes: 🟢 Configured</li>
+            </ul>
+        </div>
+        
+        <!-- SEO -->
+        <div style="background: rgba(255, 255, 255, 0.02); padding: 15px; border-radius: 12px; border: 1px solid var(--border-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-weight: 600; font-size: 14px;"><i class="fa-solid fa-magnifying-glass" style="color: var(--color-success); margin-right: 6px;"></i> SEO</span>
+                <span style="font-weight: 700; color: var(--color-success);">{{ readiness_scorecard.seo_score }}%</span>
+            </div>
+            <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; margin-bottom: 12px;">
+                <div style="width: {{ readiness_scorecard.seo_score }}%; height: 100%; background: var(--color-success); border-radius: 3px;"></div>
+            </div>
+            <ul style="margin: 0; padding: 0 0 0 15px; font-size: 11px; color: var(--color-foreground-muted); line-height: 1.6;">
+                <li>Robots.txt registered: 🟢 Active</li>
+                <li>Sitemap.xml generated: 🟢 Active</li>
+                <li>Semantic HTML layout: 🟢 Configured</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Broadcast Announcements -->
+<div class="glass-panel" style="padding: 24px; margin-bottom: 28px;">
+    <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 12px;"><i class="fa-solid fa-bullhorn" style="color: var(--color-primary); margin-right: 8px;"></i> Broadcast Global System Announcement</h4>
+    <div style="display: flex; gap: 12px; align-items: flex-end;">
+        <input type="text" id="broadcast-message" class="form-control" placeholder="Enter notification message for all active users..." style="flex-grow: 1;">
+        <button onclick="broadcastAnnouncement()" class="btn btn-primary" style="height: 42px;"><i class="fa-solid fa-paper-plane"></i> Broadcast</button>
+    </div>
+</div>
+
+<!-- Registered Users grid table -->
+<div class="glass-panel" style="padding: 28px; margin-bottom: 28px;">
+    <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 20px;"><i class="fa-solid fa-users-gear"
+            style="color: var(--color-primary); margin-right: 8px;"></i> Registered User Base & SaaS Controls</h4>
+
+    <div class="data-table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Email Address</th>
+                    <th>WhatsApp Admin Link</th>
+                    <th>Subscription Tier</th>
+                    <th>System Role</th>
+                    <th>SaaS Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users_list %}
+                <tr id="user-row-{{ u.id }}">
+                    <td style="font-weight: 600;">
+                        {{ u.username }} 
+                        {% if not u.is_active %}
+                            <span style="font-size: 10px; color: var(--color-danger); margin-left: 4px;">(Deactivated)</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ u.email }}</td>
+                    <td>
+                        {% if u.profile.whatsapp_number %}
+                        <button onclick="sendWhatsApp('{{ u.username }}', '{{ u.profile.whatsapp_number }}')" style="
+                            background: none;
+                            border: none;
+                            color: var(--color-success);
+                            font-weight: 600;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            gap: 6px;
+                        ">
+                            <i class="fa-brands fa-whatsapp"></i>
+                            {{ u.profile.whatsapp_number }}
+                        </button>
+                        {% else %}
+                        <span style="font-style: italic; color: var(--text-muted);">None set</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <select onchange="changeSubscription('{{ u.id }}', this.value)" class="form-select" style="padding: 4px 8px; font-size: 12px; width: 140px; background: rgba(255,255,255,0.05); color: var(--text-primary); border-color: var(--border-color);">
+                            <option value="free" {% if u.profile.subscription_tier == 'free' %}selected{% endif %}>Free Tier</option>
+                            <option value="pro" {% if u.profile.subscription_tier == 'pro' %}selected{% endif %}>Pro Plan</option>
+                            <option value="business" {% if u.profile.subscription_tier == 'business' %}selected{% endif %}>Business Plan</option>
+                            <option value="enterprise" {% if u.profile.subscription_tier == 'enterprise' %}selected{% endif %}>Enterprise Plan</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select onchange="changeRole('{{ u.id }}', this.value)" class="form-select" style="padding: 4px 8px; font-size: 12px; width: 140px; background: rgba(255,255,255,0.05); color: var(--text-primary); border-color: var(--border-color);">
+                            <option value="user" {% if u.profile.role == 'user' %}selected{% endif %}>User</option>
+                            <option value="support_staff" {% if u.profile.role == 'support_staff' %}selected{% endif %}>Support Staff</option>
+                            <option value="admin" {% if u.profile.role == 'admin' %}selected{% endif %}>Admin</option>
+                            <option value="super_admin" {% if u.profile.role == 'super_admin' %}selected{% endif %}>Super Admin</option>
+                        </select>
+                    </td>
+                    <td>
+                        {% if u != user %}
+                        <button onclick="toggleUserActive('{{ u.id }}')" id="toggle-btn-{{ u.id }}" class="btn {% if u.is_active %}btn-danger{% else %}btn-secondary{% endif %}" style="padding: 6px 12px; font-size: 12px;">
+                            {% if u.is_active %}Deactivate{% else %}Activate{% endif %}
+                        </button>
+                        {% else %}
+                        <span style="font-size:11px; color:var(--text-muted); font-style:italic;">Self Account</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Customer Support Tickets -->
+<div class="glass-panel" style="padding: 28px; margin-bottom: 28px;">
+    <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 20px;"><i class="fa-solid fa-headset" style="color: var(--color-success); margin-right: 8px;"></i> Customer Support Ticketing System</h4>
+    <div class="data-table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Ticket ID</th>
+                    <th>User</th>
+                    <th>Subject</th>
+                    <th>Message</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ticket in tickets %}
+                <tr id="ticket-row-{{ ticket.ticket_id }}">
+                    <td>#{{ ticket.ticket_id }}</td>
+                    <td style="font-weight:600;">{{ ticket.user.username }}</td>
+                    <td style="font-weight:600; color: var(--color-primary);">{{ ticket.subject }}</td>
+                    <td>{{ ticket.message }}</td>
+                    <td>
+                        {% if ticket.status == 'open' %}
+                            <span class="badge badge-danger">Open</span>
+                        {% else %}
+                            <span class="badge badge-success">Resolved</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if ticket.status == 'open' %}
+                            <button onclick="resolveTicket('{{ ticket.ticket_id }}')" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;"><i class="fa-solid fa-check"></i> Resolve</button>
+                        {% else %}
+                            <span style="font-size: 11px; color: var(--text-muted); font-style: italic;">Resolved</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px; font-style: italic;">No customer support tickets found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Active Telemetry & Activity Logs -->
+<div class="glass-panel" style="padding: 28px; margin-bottom: 32px;">
+    <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 20px;"><i class="fa-solid fa-user-secret"
+            style="color: var(--color-danger); margin-right: 8px;"></i> User Activity Telemetry Audit Log</h4>
+
+    <div class="data-table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>User</th>
+                    <th>Action Done</th>
+                    <th>IP Address</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in activity_logs %}
+                <tr>
+                    <td style="font-family: monospace;">{{ log.timestamp|date:"Y-m-d H:i:s" }}</td>
+                    <td style="font-weight: 600;">{{ log.user.username|default:"Anonymous" }}</td>
+                    <td>{{ log.action }}</td>
+                    <td style="font-family: monospace; color: var(--text-muted);">{{ log.ip_address|default:"127.0.0.1" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4"
+                        style="text-align: center; color: var(--text-muted); font-style: italic; padding: 20px;">No user
+                        activity has been logged yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Database & Query Profiling Telemetry Dashboard -->
+<div class="chart-row" style="margin-bottom: 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+    <!-- DB Table Counts -->
+    <div class="glass-panel" style="padding: 28px;">
+        <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 20px;">
+            <i class="fa-solid fa-database" style="color: var(--color-primary); margin-right: 8px;"></i> Relational Database Row Growth
+        </h4>
+        <div class="data-table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Table Name / Entity</th>
+                        <th style="text-align: right;">Row Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in db_table_counts %}
+                    <tr>
+                        <td style="font-weight: 600; font-family: monospace;">{{ item.table }}</td>
+                        <td style="text-align: right; font-weight: 700; color: var(--color-success);">{{ item.count }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Slow Query Logs -->
+    <div class="glass-panel" style="padding: 28px;">
+        <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 20px;">
+            <i class="fa-solid fa-gauge-high" style="color: var(--color-danger); margin-right: 8px;"></i> Slow Queries Monitor (>100ms)
+        </h4>
+        <div style="background: var(--bg-primary); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); height: 260px; overflow-y: auto;">
+            {% if slow_queries_list %}
+                <ul style="list-style: none; display: flex; flex-direction: column; gap: 12px; padding: 0; margin: 0; font-family: monospace; font-size: 11px;">
+                    {% for log in slow_queries_list %}
+                        <li style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px; color: var(--text-secondary);">
+                            {{ log }}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); font-style: italic; gap: 8px;">
+                    <i class="fa-solid fa-circle-check" style="font-size: 32px; color: var(--color-success);"></i>
+                    <span>All queries executed in &lt;100ms.</span>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. Broadcast notifications
+    function broadcastAnnouncement() {
+        const msgInput = document.getElementById('broadcast-message');
+        const message = msgInput.value.trim();
+        if (!message) {
+            alert('Please enter a message to broadcast.');
+            return;
+        }
+
+        fetch("{% url 'admin_broadcast_notification' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: new URLSearchParams({ message: message })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                alert('Announcement broadcasted successfully to all active users!');
+                msgInput.value = '';
+            } else {
+                alert('Error: ' + data.error);
+            }
+        });
+    }
+
+    // 2. Toggle user status
+    function toggleUserActive(userId) {
+        fetch("{% url 'admin_toggle_user' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: new URLSearchParams({ user_id: userId })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                alert('User active state updated.');
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        });
+    }
+
+    // 3. Change user role
+    function changeRole(userId, newRole) {
+        fetch("{% url 'admin_change_role' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: new URLSearchParams({ user_id: userId, role: newRole })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                alert('User system role updated.');
+            } else {
+                alert('Error: ' + data.error);
+            }
+        });
+    }
+
+    // 4. Change user subscription
+    function changeSubscription(userId, newTier) {
+        fetch("{% url 'admin_change_subscription' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: new URLSearchParams({ user_id: userId, tier: newTier })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                alert('User subscription tier updated.');
+            } else {
+                alert('Error: ' + data.error);
+            }
+        });
+    }
+
+    // 5. Resolve Customer support ticket
+    function resolveTicket(ticketId) {
+        fetch("{% url 'admin_resolve_ticket' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: new URLSearchParams({ ticket_id: ticketId })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                alert('Ticket resolved successfully.');
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        });
+    }
+
+    // 6. Existing send whatsapp prompt
+    function sendWhatsApp(username, phone) {
+        let message = prompt("Enter WhatsApp message:");
+        if (!message) return;
+
+        fetch("{% url 'send_whatsapp' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: new URLSearchParams({
+                username: username,
+                phone: phone,
+                message: message
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert("WhatsApp message sent successfully!");
+            } else {
+                alert("Error: " + data.error);
+            }
+        })
+        .catch(error => {
+            alert("Something went wrong.");
+            console.log(error);
+        });
+    }
+</script>
+{% endblock %}

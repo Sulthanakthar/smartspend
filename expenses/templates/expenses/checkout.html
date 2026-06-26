@@ -1,0 +1,245 @@
+{% extends 'expenses/base.html' %}
+{% load static %}
+
+{% block title %}Checkout{% endblock %}
+{% block page_title %}Secure Checkout{% endblock %}
+
+{% block content %}
+<div class="checkout-wrapper" style="padding: 20px; max-width: 900px; margin: 0 auto;">
+    
+    {% if success %}
+    <!-- Success Page -->
+    <div class="glass-panel" style="padding: 40px; text-align: center; max-width: 600px; margin: 40px auto; border-color: rgba(16, 185, 129, 0.4); box-shadow: 0 8px 32px 0 rgba(16, 185, 129, 0.1);">
+        <div style="font-size: 60px; color: var(--color-success); margin-bottom: 24px;">
+            <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <h2 style="font-size: 32px; margin-bottom: 12px;">Payment Successful!</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 30px;">
+            Thank you! Your account has been upgraded to the **{{ plan|title }}** plan ({{ billing_cycle|title }} cycle).
+        </p>
+        <div style="background: var(--bg-secondary); padding: 16px; border-radius: 12px; margin-bottom: 30px; font-size: 15px; border: 1px solid var(--border-color);">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="color: var(--text-secondary);">Plan upgraded to:</span>
+                <span style="font-weight: 600;">{{ plan|title }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="color: var(--text-secondary);">Billing interval:</span>
+                <span style="font-weight: 600;">{{ billing_cycle|title }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--text-secondary);">Amount billed:</span>
+                <span style="font-weight: 600; color: var(--color-success);">${{ amount }}</span>
+            </div>
+        </div>
+        <a href="{% url 'dashboard' %}" class="btn btn-primary" style="padding: 12px 30px;">
+            Go To Dashboard <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </div>
+    
+    {% else %}
+    
+    <!-- Checkout Form Layout -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; margin-top: 20px;">
+        
+        <!-- Billing Details Panel -->
+        <div class="glass-panel" style="padding: 32px; height: fit-content;">
+            <h3 style="font-size: 20px; margin-bottom: 24px; font-family: var(--font-heading);">Order <span class="gradient-text">Summary</span></h3>
+            
+            <div style="display: flex; justify-content: space-between; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
+                <div>
+                    <div style="font-weight: 600; font-size: 16px;">{{ plan|title }} Plan</div>
+                    <div style="font-size: 13px; color: var(--text-secondary);">Billed {{ billing_cycle|title }}</div>
+                </div>
+                <div style="font-weight: 700; font-size: 18px;" id="subtotal-val">${{ initial_price }}</div>
+            </div>
+            
+            <!-- Coupon Form -->
+            <div style="margin-bottom: 24px;">
+                <label style="display: block; font-size: 13px; font-weight: 500; margin-bottom: 8px; color: var(--text-secondary);">Promo Code / Coupon</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="coupon-input" class="form-control" placeholder="e.g. WELCOME50" style="text-transform: uppercase; padding: 8px 12px; font-size: 14px;">
+                    <button type="button" onclick="validateCoupon()" class="btn btn-secondary" style="padding: 8px 16px; font-size: 13px;">Apply</button>
+                </div>
+                <div id="coupon-status" style="font-size: 12px; margin-top: 6px;"></div>
+            </div>
+            
+            <!-- Pricing Calculations -->
+            <div style="display: flex; flex-direction: column; gap: 12px; font-size: 14px; margin-bottom: 24px; padding: 16px; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px solid var(--border-color);">
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-secondary);">Subtotal</span>
+                    <span id="calc-subtotal">${{ initial_price }}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; color: var(--color-success); display: none;" id="discount-row">
+                    <span>Discount</span>
+                    <span id="calc-discount">-$0.00</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 16px; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 4px;">
+                    <span>Total</span>
+                    <span id="calc-total" style="color: var(--color-primary);">${{ initial_price }}</span>
+                </div>
+            </div>
+            
+            <div style="font-size: 12px; color: var(--text-muted); text-align: center;">
+                <i class="fa-solid fa-lock" style="margin-right: 4px;"></i> Secure SSL Checkout powered by Twilio FinTech Services.
+            </div>
+        </div>
+        
+        <!-- Payment Simulation Panel -->
+        <div class="glass-panel" style="padding: 32px;">
+            <h3 style="font-size: 20px; margin-bottom: 24px; font-family: var(--font-heading);">Payment <span class="gradient-text">Simulation</span></h3>
+            
+            {% if error %}
+            <div class="glass-panel" style="padding: 12px; margin-bottom: 20px; border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.05); color: var(--color-danger); font-size: 13px; text-align: center;">
+                {{ error }}
+            </div>
+            {% endif %}
+            
+            <form method="POST" id="checkout-form">
+                {% csrf_token %}
+                <input type="hidden" name="plan" value="{{ plan }}">
+                <input type="hidden" name="billing_cycle" value="{{ billing_cycle }}">
+                <input type="hidden" name="coupon_code" id="coupon-code-hidden" value="">
+                <input type="hidden" name="amount" id="amount-hidden" value="{{ initial_price }}">
+                
+                <div class="form-group">
+                    <label for="cardholder">Cardholder Name</label>
+                    <input type="text" id="cardholder" class="form-control" placeholder="John Doe" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="cardnumber">Card Number</label>
+                    <div style="position: relative;">
+                        <input type="text" id="cardnumber" class="form-control" placeholder="4111 2222 3333 4444" minlength="16" maxlength="19" required style="padding-left: 40px;">
+                        <i class="fa-solid fa-credit-card" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label for="expiry">Expiry Date</label>
+                        <input type="text" id="expiry" class="form-control" placeholder="MM/YY" maxlength="5" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cvv">CVV</label>
+                        <input type="password" id="cvv" class="form-control" placeholder="***" maxlength="3" required>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px; font-size: 15px; margin-top: 10px;">
+                    <i class="fa-solid fa-shield-halved"></i> Simulate Upgraded Plan Payment
+                </button>
+            </form>
+        </div>
+        
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let subtotal = parseFloat("{{ initial_price }}");
+    let discountPercent = 0;
+    
+    function validateCoupon() {
+        const input = document.getElementById('coupon-input');
+        const status = document.getElementById('coupon-status');
+        const code = input.value.trim();
+        
+        if (!code) {
+            status.style.color = 'var(--color-danger)';
+            status.innerText = 'Please enter a coupon code.';
+            return;
+        }
+        
+        status.style.color = 'var(--text-secondary)';
+        status.innerText = 'Checking code...';
+        
+        fetch("{% url 'validate_coupon_ajax' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: new URLSearchParams({ 'code': code })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                discountPercent = parseInt(data.discount_percent);
+                status.style.color = 'var(--color-success)';
+                status.innerText = `Coupon applied! ${discountPercent}% discount.`;
+                
+                // Update pricing calculations
+                updateCalculations(code);
+            } else {
+                discountPercent = 0;
+                status.style.color = 'var(--color-danger)';
+                status.innerText = data.error || 'Invalid coupon code.';
+                updateCalculations('');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            status.style.color = 'var(--color-danger)';
+            status.innerText = 'Network error validation coupon.';
+        });
+    }
+    
+    function updateCalculations(code) {
+        const discountRow = document.getElementById('discount-row');
+        const discountVal = document.getElementById('calc-discount');
+        const totalVal = document.getElementById('calc-total');
+        const amountHidden = document.getElementById('amount-hidden');
+        const couponHidden = document.getElementById('coupon-code-hidden');
+        
+        if (discountPercent > 0) {
+            const discountAmt = subtotal * (discountPercent / 100);
+            const totalAmt = subtotal - discountAmt;
+            
+            discountRow.style.display = 'flex';
+            discountVal.innerText = `-$${discountAmt.toFixed(2)}`;
+            totalVal.innerText = `$${totalAmt.toFixed(2)}`;
+            amountHidden.value = totalAmt.toFixed(2);
+            couponHidden.value = code;
+        } else {
+            discountRow.style.display = 'none';
+            totalVal.innerText = `$${subtotal.toFixed(2)}`;
+            amountHidden.value = subtotal.toFixed(2);
+            couponHidden.value = '';
+        }
+    }
+    
+    // Auto format credit card number spaces
+    const cardInput = document.getElementById('cardnumber');
+    if (cardInput) {
+        cardInput.addEventListener('input', function (e) {
+            let val = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+            let matches = val.match(/\d{4,16}/g);
+            let match = matches && matches[0] || '';
+            let parts = [];
+            for (let i = 0, len = match.length; i < len; i += 4) {
+                parts.push(match.substring(i, i + 4));
+            }
+            if (parts.length > 0) {
+                e.target.value = parts.join(' ');
+            } else {
+                e.target.value = val;
+            }
+        });
+    }
+
+    // Auto format expiry date MM/YY
+    const expiryInput = document.getElementById('expiry');
+    if (expiryInput) {
+        expiryInput.addEventListener('input', function (e) {
+            let val = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+            if (val.length >= 2) {
+                e.target.value = val.substring(0, 2) + '/' + val.substring(2, 4);
+            } else {
+                e.target.value = val;
+            }
+        });
+    }
+</script>
+{% endblock %}

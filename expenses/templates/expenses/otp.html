@@ -1,0 +1,42 @@
+{% extends 'expenses/base.html' %}
+{% block title %}Verify OTP - SmartSpend{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper" style="display: flex; justify-content: center; align-items: center; min-height: 80vh; padding: 20px;">
+    <div class="circle-deco circle-1" style="position: absolute; width: 300px; height: 300px; background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, rgba(99,102,241,0) 70%); border-radius: 50%; filter: blur(40px); top: 15%; left: 20%;"></div>
+    <div class="circle-deco circle-2" style="position: absolute; width: 300px; height: 300px; background: radial-gradient(circle, rgba(16,185,129,0.1) 0%, rgba(16,185,129,0) 70%); border-radius: 50%; filter: blur(40px); bottom: 15%; right: 20%;"></div>
+    
+    <div class="auth-card glass-panel" style="z-index: 2; padding: 40px; max-width: 450px; width: 100%; border-radius: 24px; box-shadow: var(--shadow-card); background: var(--bg-card); border: 1px solid var(--border-color); text-align: center;">
+        <div class="auth-header" style="margin-bottom: 30px;">
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(99, 102, 241, 0.1); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                <i class="fa-solid fa-shield-halved" style="font-size: 28px; color: var(--color-primary);"></i>
+            </div>
+            <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 8px;">2-Step <span class="gradient-text">Verification</span></h2>
+            <p style="color: var(--text-secondary); font-size: 14px;">Enter the 6-digit OTP code sent to your registered device/console to log in to <strong>{{ username }}</strong>.</p>
+        </div>
+        
+        <form method="POST">
+            {% csrf_token %}
+            
+            {% if error %}
+            <div class="glass-panel" style="padding: 12px; margin-bottom: 20px; border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.05); color: var(--color-danger); font-size: 13px; text-align: center; border-radius: 8px;">
+                <i class="fa-solid fa-circle-exclamation"></i> {{ error }}
+            </div>
+            {% endif %}
+            
+            <div class="form-group" style="margin-bottom: 24px; text-align: left;">
+                <label for="otp" style="display: block; font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px;">One-Time Password (OTP)</label>
+                <input type="text" name="otp" id="otp" class="form-control" placeholder="e.g. 123456" maxlength="6" pattern="\d{6}" style="text-align: center; font-size: 20px; letter-spacing: 6px; font-weight: 700; padding: 12px; border-radius: 12px;" required autofocus>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 12px; font-size: 15px; font-weight: 600; border-radius: 12px;">
+                <i class="fa-solid fa-unlock-keyhole" style="margin-right: 8px;"></i> Verify & Continue
+            </button>
+        </form>
+        
+        <div style="text-align: center; margin-top: 24px; font-size: 14px; color: var(--text-secondary);">
+            Wrong account? <a href="{% url 'login' %}" style="color: var(--color-primary); text-decoration: none; font-weight: 600;">Sign In As Different User</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

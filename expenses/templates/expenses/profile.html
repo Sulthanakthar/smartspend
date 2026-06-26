@@ -1,0 +1,71 @@
+{% extends 'expenses/base.html' %}
+{% load static %}
+{% block title %}Profile - SmartSpend{% endblock %}
+{% block page_title %}Profile Management{% endblock %}
+
+{% block content %}
+<div class="glass-panel" style="padding: 32px; max-width: 600px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 28px;">
+        <div class="user-avatar" style="width: 72px; height: 72px; font-size: 32px; margin: 0 auto 12px auto; box-shadow: 0 4px 15px rgba(99,102,241,0.3);">
+            {{ user.username|make_list|first|upper }}
+        </div>
+        <h3 style="font-size: 20px; font-weight: 700;">{{ user.username }}</h3>
+        <p style="font-size: 13px; color: var(--text-secondary);">Member since {{ user.date_joined|date:"F Y" }}</p>
+    </div>
+    
+    <form method="POST">
+        {% csrf_token %}
+        
+        {% if form.errors %}
+        <div class="glass-panel" style="padding: 12px; margin-bottom: 20px; border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.05); color: var(--color-danger); font-size: 13px;">
+            {% for field in form %}
+                {% for error in field.errors %}
+                    <div><strong>{{ field.label }}:</strong> {{ error }}</div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <div class="form-group">
+            <label for="id_username">Username</label>
+            {{ form.username }}
+        </div>
+        
+        <div class="form-group">
+            <label for="id_email">Email Address</label>
+            {{ form.email }}
+        </div>
+        
+        <div class="form-group">
+            <label for="id_currency">Preferred Currency</label>
+            {{ form.currency }}
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+                <label for="id_theme">Theme</label>
+                {{ form.theme }}
+            </div>
+            
+            <div class="form-group">
+                <label for="id_language">Language</label>
+                {{ form.language }}
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="id_whatsapp_number">WhatsApp Phone Number</label>
+            {{ form.whatsapp_number }}
+            <small style="display: block; font-size: 11px; color: var(--text-secondary); margin-top: 4px;">
+                Enter your phone number (including country code, e.g., +919944550063) to allow sending WhatsApp commands.
+            </small>
+        </div>
+        
+        <div style="display: flex; justify-content: flex-end; margin-top: 24px;">
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">
+                <i class="fa-solid fa-user-check"></i> Update Profile Details
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

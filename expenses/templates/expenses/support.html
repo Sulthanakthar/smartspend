@@ -1,0 +1,315 @@
+{% extends 'expenses/base.html' %}
+{% load static %}
+{% block title %}Support Desk - SmartSpend{% endblock %}
+{% block page_title %}Customer Success Desk{% endblock %}
+
+{% block content %}
+<div class="support-container" style="max-width: 1100px; margin: 0 auto;">
+    <!-- Welcome Header Card -->
+    <div class="glass-panel" style="padding: 32px; margin-bottom: 24px; text-align: center; background: linear-gradient(135deg, rgba(99, 102, 241, 0.07) 0%, rgba(16, 185, 129, 0.03) 100%);">
+        <h3 style="font-size: 26px; font-weight: 800; margin-bottom: 8px;">How can we help you <span class="gradient-text">today</span>?</h3>
+        <p style="color: var(--text-secondary); max-width: 600px; margin: 0 auto 20px; font-size: 14px;">Search our extensive Knowledge Base, view frequently asked questions, open a support ticket, or submit your feedback directly to the team.</p>
+        
+        <!-- Search bar -->
+        <div style="position: relative; max-width: 500px; margin: 0 auto;">
+            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 16px;"></i>
+            <input type="text" id="kb-search" placeholder="Search articles, FAQs, and resources..." onkeyup="filterSupportContent()" style="width: 100%; padding: 12px 16px 12px 48px; border-radius: 30px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; outline: none; transition: var(--transition);">
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div style="display: flex; gap: 12px; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; overflow-x: auto;">
+        <button id="tab-kb-btn" class="btn btn-primary" onclick="switchSupportTab('kb')" style="border-radius: 30px; font-size: 13px;">
+            <i class="fa-solid fa-book-open"></i> Knowledge Base & FAQs
+        </button>
+        <button id="tab-form-btn" class="btn btn-secondary" onclick="switchSupportTab('form')" style="border-radius: 30px; font-size: 13px;">
+            <i class="fa-solid fa-circle-question"></i> Contact & Feedback
+        </button>
+        <button id="tab-history-btn" class="btn btn-secondary" onclick="switchSupportTab('history')" style="border-radius: 30px; font-size: 13px;">
+            <i class="fa-solid fa-history"></i> Ticket History ({{ tickets|length }})
+        </button>
+    </div>
+
+    <!-- TAB 1: KNOWLEDGE BASE & FAQS -->
+    <div id="tab-kb-content">
+        <!-- Knowledge Base Cards -->
+        <h4 style="font-size: 18px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-graduation-cap" style="color: var(--color-primary);"></i>
+            Popular Knowledge Base Articles
+        </h4>
+        <div class="kb-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-bottom: 32px;">
+            <div class="glass-panel kb-card" style="padding: 24px; transition: var(--transition);" data-search="upgrade account settings subscription billing payment premium enterprise">
+                <h5 style="font-size: 15px; font-weight: 700; color: var(--color-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-credit-card"></i> How to Upgrade My Subscription
+                </h5>
+                <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">To upgrade, navigate to the Pricing plans. You can select Premium, Professional, or Enterprise tiers, choose Monthly or Annual cycles, and apply promotional coupon codes like SAVE10 or WELCOME50 for instant discounts.</p>
+            </div>
+            
+            <div class="glass-panel kb-card" style="padding: 24px; transition: var(--transition);" data-search="ai assistant chatbot forecasts insights spending categories advice rules">
+                <h5 style="font-size: 15px; font-weight: 700; color: var(--color-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-robot"></i> Harnessing the AI Assistant
+                </h5>
+                <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">Use the AI chatbot or spoken voice controls to ask "Where did I spend most?" or "How much did I spend on food?". The AI advisor parses dates, aggregate categories, predicts next month's spending, and designs 1, 5, or 10-year compound savings projections.</p>
+            </div>
+            
+            <div class="glass-panel kb-card" style="padding: 24px; transition: var(--transition);" data-search="security privacy mfa otp verification standard code settings login">
+                <h5 style="font-size: 15px; font-weight: 700; color: var(--color-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-shield-halved"></i> Securing Your Account with MFA
+                </h5>
+                <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">Navigate to the Settings page and select "Enable Multi-Factor Authentication (MFA via OTP)". Upon your next sign-in, you will receive a secure 6-digit verification code printed to your server/email log to complete entry.</p>
+            </div>
+            
+            <div class="glass-panel kb-card" style="padding: 24px; transition: var(--transition);" data-search="gdpr export data download delete purge settings personal info">
+                <h5 style="font-size: 15px; font-weight: 700; color: var(--color-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-user-shield"></i> GDPR Data Portability & Rights
+                </h5>
+                <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">You hold full control over your private information. Under the GDPR controls in Settings, you can trigger a full export of your personal database items as a clean JSON layout or purge your account permanently from the server.</p>
+            </div>
+        </div>
+
+        <!-- FAQ Accordion -->
+        <h4 style="font-size: 18px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-circle-question" style="color: var(--color-success);"></i>
+            Frequently Asked Questions
+        </h4>
+        <div class="faq-accordion" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px;">
+            <div class="glass-panel faq-item" style="overflow: hidden; border-radius: 12px;" data-search="change currency settings convert inr usd eur gbp aed sgd">
+                <div class="faq-header" onclick="toggleFaq(this)" style="padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: rgba(255,255,255,0.01); transition: var(--transition);">
+                    <span style="font-weight: 600; font-size: 14px;">How do I change my primary currency format?</span>
+                    <i class="fa-solid fa-chevron-down faq-chevron" style="transition: transform 0.3s; color: var(--text-muted);"></i>
+                </div>
+                <div class="faq-body" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; background: rgba(0,0,0,0.1);">
+                    <div style="padding: 20px 24px; font-size: 13px; color: var(--text-secondary); line-height: 1.6; border-top: 1px solid var(--border-color);">
+                        Go to the <strong>Settings</strong> page, select your currency choice (INR, USD, EUR, GBP, JPY, AED, or SGD) from the dropdown list, and click <strong>Save Preferences</strong>. All your dashboards, charts, and budget progress charts will update automatically to reflect this currency.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="glass-panel faq-item" style="overflow: hidden; border-radius: 12px;" data-search="delete account database backup gdpr erase history">
+                <div class="faq-header" onclick="toggleFaq(this)" style="padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: rgba(255,255,255,0.01); transition: var(--transition);">
+                    <span style="font-weight: 600; font-size: 14px;">Can I restore deleted transaction logs or accounts?</span>
+                    <i class="fa-solid fa-chevron-down faq-chevron" style="transition: transform 0.3s; color: var(--text-muted);"></i>
+                </div>
+                <div class="faq-body" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; background: rgba(0,0,0,0.1);">
+                    <div style="padding: 20px 24px; font-size: 13px; color: var(--text-secondary); line-height: 1.6; border-top: 1px solid var(--border-color);">
+                        No. In compliance with GDPR and strict consumer privacy guidelines, when you choose to <strong>Purge Account</strong> or delete specific transactions, the database rows are instantly scrubbed permanently. We do not store backups of your deleted entries. Make sure to download a JSON export before purging if you need to keep records.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="glass-panel faq-item" style="overflow: hidden; border-radius: 12px;" data-search="voice record input languages speech hindi spanish french english tts speed">
+                <div class="faq-header" onclick="toggleFaq(this)" style="padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: rgba(255,255,255,0.01); transition: var(--transition);">
+                    <span style="font-weight: 600; font-size: 14px;">What voice languages does the tracker support?</span>
+                    <i class="fa-solid fa-chevron-down faq-chevron" style="transition: transform 0.3s; color: var(--text-muted);"></i>
+                </div>
+                <div class="faq-body" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; background: rgba(0,0,0,0.1);">
+                    <div style="padding: 20px 24px; font-size: 13px; color: var(--text-secondary); line-height: 1.6; border-top: 1px solid var(--border-color);">
+                        SmartSpend voice command engine currently supports <strong>English, Spanish, French, and Hindi</strong>. You can switch your preferred voice input language from the dropdown menu in Settings, where you can also customize the Text-To-Speech (TTS) audio narration speeds.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: SUPPORT & FEEDBACK FORMS -->
+    <div id="tab-form-content" style="display: none;">
+        <div class="chart-row" style="display: flex; gap: 24px; flex-wrap: wrap;">
+            <!-- Left Panel: Support Ticket Form -->
+            <div class="glass-panel" style="padding: 28px; flex: 1; min-width: 320px; height: fit-content;">
+                <h4 style="font-size: 18px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-headset" style="color: var(--color-primary);"></i>
+                    Open Support Ticket
+                </h4>
+                <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 20px;">Having technical issues or premium feature delays? Send a request to our engineering staff.</p>
+                
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="form_type" value="ticket">
+                    
+                    <div class="form-group">
+                        <label for="subject">Subject / Issue Summary</label>
+                        <input type="text" name="subject" id="subject" class="form-control" placeholder="e.g. Coupon WELCOME50 did not apply" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Detailed Description</label>
+                        <textarea name="message" id="message" class="form-control" rows="5" placeholder="Describe the error, step-by-step actions, and any details..." style="resize: none;" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 10px; padding: 10px;">
+                        <i class="fa-solid fa-paper-plane"></i> Submit Ticket
+                    </button>
+                </form>
+            </div>
+
+            <!-- Right Panel: Feedback / Review Submission Form -->
+            <div class="glass-panel" style="padding: 28px; flex: 1; min-width: 320px; height: fit-content;">
+                <h4 style="font-size: 18px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--color-warning);"></i>
+                    Share Platform Feedback
+                </h4>
+                <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 20px;">Help us grow SmartSpend! Submit feature requests, bug reports, or general reviews.</p>
+                
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="form_type" value="feedback">
+                    
+                    <div class="form-group">
+                        <label for="feedback_type">Feedback Category</label>
+                        <select name="feedback_type" id="feedback_type" class="form-select">
+                            <option value="review">General User Review</option>
+                            <option value="feature">New Feature Request</option>
+                            <option value="bug">Report Software Bug</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="title">Title</label>
+                        <input type="text" name="title" id="title" class="form-control" placeholder="Brief summary of your feedback" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="description">Detailed Description / Thoughts</label>
+                        <textarea name="description" id="description" class="form-control" rows="5" placeholder="Describe what features you want to see, or details of a bug encountered..." style="resize: none;" required></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 10px; padding: 10px; background: linear-gradient(135deg, var(--color-warning) 0%, #d97706 100%); border-color: var(--color-warning);">
+                        <i class="fa-solid fa-star"></i> Submit Feedback
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 3: TICKET HISTORY -->
+    <div id="tab-history-content" style="display: none;">
+        <div class="glass-panel" style="padding: 28px;">
+            <h4 style="font-size: 18px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-clock-rotate-left" style="color: var(--color-success);"></i>
+                Active Support Tickets History
+            </h4>
+            
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Ticket ID</th>
+                            <th>Created At</th>
+                            <th>Subject</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in tickets %}
+                        <tr>
+                            <td>#{{ ticket.ticket_id }}</td>
+                            <td>{{ ticket.created_at|date:"Y-m-d H:i" }}</td>
+                            <td style="font-weight: 600; color: var(--color-primary);">{{ ticket.subject }}</td>
+                            <td>
+                                {% if ticket.status == 'open' %}
+                                    <span class="badge badge-danger" style="background: rgba(239, 68, 68, 0.15); color: var(--color-danger); border: 1px solid rgba(239, 68, 68, 0.3); padding: 4px 10px; border-radius: 20px; font-weight: 600;">Open</span>
+                                {% else %}
+                                    <span class="badge badge-success" style="background: rgba(16, 185, 129, 0.15); color: var(--color-success); border: 1px solid rgba(16, 185, 129, 0.3); padding: 4px 10px; border-radius: 20px; font-weight: 600;">Resolved</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: var(--text-secondary); font-style: italic; padding: 36px;">No support tickets opened yet. If you have an issue, navigate to "Contact & Feedback" tab to open a support ticket.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Tab switching logic
+    function switchSupportTab(tabName) {
+        // Content blocks
+        const kbContent = document.getElementById('tab-kb-content');
+        const formContent = document.getElementById('tab-form-content');
+        const historyContent = document.getElementById('tab-history-content');
+        
+        // Buttons
+        const kbBtn = document.getElementById('tab-kb-btn');
+        const formBtn = document.getElementById('tab-form-btn');
+        const historyBtn = document.getElementById('tab-history-btn');
+        
+        // Hide all
+        kbContent.style.display = 'none';
+        formContent.style.display = 'none';
+        historyContent.style.display = 'none';
+        
+        // Clear active classes from buttons
+        kbBtn.className = 'btn btn-secondary';
+        formBtn.className = 'btn btn-secondary';
+        historyBtn.className = 'btn btn-secondary';
+        
+        // Show selected and update active button
+        if (tabName === 'kb') {
+            kbContent.style.display = 'block';
+            kbBtn.className = 'btn btn-primary';
+        } else if (tabName === 'form') {
+            formContent.style.display = 'block';
+            formBtn.className = 'btn btn-primary';
+        } else if (tabName === 'history') {
+            historyContent.style.display = 'block';
+            historyBtn.className = 'btn btn-primary';
+        }
+    }
+
+    // Interactive accordion toggle
+    function toggleFaq(header) {
+        const item = header.parentElement;
+        const body = item.querySelector('.faq-body');
+        const chevron = item.querySelector('.faq-chevron');
+        
+        // Check if item is already active
+        const isActive = item.classList.contains('active');
+        
+        // Close all other FAQs
+        document.querySelectorAll('.faq-item').forEach(el => {
+            el.classList.remove('active');
+            el.querySelector('.faq-body').style.maxHeight = '0';
+            el.querySelector('.faq-chevron').style.transform = 'rotate(0deg)';
+        });
+        
+        // If it wasn't active, open it
+        if (!isActive) {
+            item.classList.add('active');
+            body.style.maxHeight = body.scrollHeight + 'px';
+            chevron.style.transform = 'rotate(180deg)';
+        }
+    }
+
+    // Dynamic search filtering
+    function filterSupportContent() {
+        const query = document.getElementById('kb-search').value.toLowerCase().trim();
+        
+        // Filter Knowledge Base cards
+        const kbCards = document.querySelectorAll('.kb-card');
+        kbCards.forEach(card => {
+            const searchText = card.getAttribute('data-search') + " " + card.innerText.toLowerCase();
+            if (searchText.includes(query)) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+        
+        // Filter FAQ items
+        const faqItems = document.querySelectorAll('.faq-item');
+        faqItems.forEach(item => {
+            const searchText = item.getAttribute('data-search') + " " + item.innerText.toLowerCase();
+            if (searchText.includes(query)) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,131 @@
+{% extends 'expenses/base.html' %}
+{% block title %}{{ post.title }} - Community Forum{% endblock %}
+{% block page_title %}Discussion Thread{% endblock %}
+
+{% block content %}
+<div class="support-container" style="max-width: 800px; margin: 0 auto; text-align: left;">
+    <!-- Back button -->
+    <a href="{% url 'forum_page' %}" class="btn btn-secondary" style="margin-bottom: 20px; border-radius: 8px; font-size: 12px; width: fit-content; padding: 6px 16px;">
+        <i class="fa-solid fa-arrow-left"></i> Back to Forum
+    </a>
+
+    <!-- Main Thread Post -->
+    <div class="glass-panel" style="padding: 28px; border-radius: 16px; margin-bottom: 28px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px; font-size: 12px; color: var(--text-muted);">
+            <div style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, var(--color-primary) 0%, #3b82f6 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 10px;">
+                {{ post.user.username|make_list|first|upper }}
+            </div>
+            <span>Asked by <strong>{{ post.user.username }}</strong> &bull; {{ post.created_at|date:"Y-m-d H:i" }}</span>
+        </div>
+        
+        <h3 style="font-size: 22px; font-weight: 800; margin-bottom: 16px; color: var(--text-primary);">
+            {{ post.title }}
+        </h3>
+        
+        <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; white-space: pre-line; margin-bottom: 20px;">
+            {{ post.content }}
+        </p>
+        
+        <div style="display: flex; gap: 16px; align-items: center; font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 16px;">
+            <span style="display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-thumbs-up" style="color: var(--color-primary);"></i> <strong id="detail-upvotes">{{ post.upvote_count }}</strong> Upvotes
+            </span>
+            <span style="display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-comments"></i> <strong>{{ comments|length }}</strong> Replies
+            </span>
+        </div>
+    </div>
+
+    <!-- Replies / Comments Section -->
+    <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">Replies & Answers</h4>
+    <div id="forum-comments-container" style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 28px;">
+        {% for comment in comments %}
+        <div class="glass-panel" style="padding: 20px; border-radius: 12px; background: rgba(255,255,255,0.01);">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 11px; color: var(--text-muted);">
+                <div style="width: 20px; height: 20px; border-radius: 50%; background: rgba(99,102,241,0.15); color: var(--color-primary); border: 1px solid rgba(99,102,241,0.3); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 9px;">
+                    {{ comment.user.username|make_list|first|upper }}
+                </div>
+                <span><strong>{{ comment.user.username }}</strong> &bull; {{ comment.created_at|date:"Y-m-d H:i" }}</span>
+            </div>
+            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin: 0; white-space: pre-line;">
+                {{ comment.content }}
+            </p>
+        </div>
+        {% empty %}
+        <div id="no-comments-indicator" class="glass-panel" style="padding: 28px; text-align: center; color: var(--text-secondary); font-style: italic; border-radius: 12px;">
+            No replies yet. Be the first to answer!
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Write Reply form -->
+    <div class="glass-panel" style="padding: 24px; border-radius: 16px; margin-bottom: 40px;">
+        <h4 style="font-size: 15px; font-weight: 700; margin-bottom: 12px;">Leave a Reply</h4>
+        <form id="comment-form" onsubmit="submitForumComment(event)">
+            <div class="form-group" style="margin-bottom: 16px;">
+                <textarea id="comment-content" class="form-control" rows="4" placeholder="Write your reply, suggestion, or comment..." required style="resize: none; border-radius: 8px;"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary" style="border-radius: 8px; font-size: 12px; padding: 8px 24px; width: fit-content; margin-left: auto; display: block;">
+                <i class="fa-solid fa-paper-plane" style="margin-right: 6px;"></i> Send Reply
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function submitForumComment(event) {
+        event.preventDefault();
+        const content = document.getElementById('comment-content').value.trim();
+        if (!content) return;
+        
+        fetch("{% url 'create_forum_comment_ajax' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: new URLSearchParams({
+                post_id: "{{ post.post_id }}",
+                content: content
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                // Clear input
+                document.getElementById('comment-content').value = '';
+                
+                // Hide no comments indicator
+                const indicator = document.getElementById('no-comments-indicator');
+                if (indicator) indicator.style.display = 'none';
+                
+                // Append new comment card
+                const container = document.getElementById('forum-comments-container');
+                const card = document.createElement('div');
+                card.className = 'glass-panel';
+                card.style.padding = '20px';
+                card.style.borderRadius = '12px';
+                card.style.background = 'rgba(255,255,255,0.01)';
+                card.style.textAlign = 'left';
+                
+                card.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 11px; color: var(--text-muted);">
+                        <div style="width: 20px; height: 20px; border-radius: 50%; background: rgba(99,102,241,0.15); color: var(--color-primary); border: 1px solid rgba(99,102,241,0.3); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 9px;">
+                            ${data.username.charAt(0).toUpperCase()}
+                        </div>
+                        <span><strong>${data.username}</strong> &bull; ${data.created_at}</span>
+                    </div>
+                    <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin: 0; white-space: pre-line;">
+                        ${data.content}
+                    </p>
+                `;
+                container.appendChild(card);
+            } else {
+                alert('Error adding comment: ' + data.error);
+            }
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,196 @@
+{% extends 'expenses/base.html' %}
+{% load static %}
+
+{% block title %}Pricing Plans{% endblock %}
+{% block page_title %}Subscription Plans{% endblock %}
+
+{% block content %}
+<div class="pricing-container" style="padding: 20px; max-width: 1200px; margin: 0 auto;">
+    
+    <!-- Header -->
+    <div style="text-align: center; margin-bottom: 40px;">
+        <h1 style="font-size: 36px; margin-bottom: 12px;">Choose Your <span class="gradient-text">Plan</span></h1>
+        <p style="color: var(--text-secondary); max-width: 600px; margin: 0 auto;">
+            Get unlimited tracking, advanced AI analysis, team collaborations, and enterprise features to scale your financial success.
+        </p>
+        
+        <!-- Billing Cycle Toggle -->
+        <div style="display: inline-flex; align-items: center; gap: 12px; margin-top: 30px; background: var(--bg-secondary); padding: 6px; border-radius: 30px; border: 1px solid var(--border-color);">
+            <button id="toggle-monthly" onclick="setBillingCycle('monthly')" class="btn btn-primary" style="border-radius: 20px; padding: 6px 20px; font-size: 14px; font-weight: 600;">Monthly</button>
+            <button id="toggle-annual" onclick="setBillingCycle('annual')" class="btn btn-secondary" style="border-radius: 20px; padding: 6px 20px; font-size: 14px; font-weight: 600; border: none;">Annual <span style="background: var(--color-success); color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 4px;">Save 20%</span></button>
+        </div>
+    </div>
+    
+    <!-- Pricing Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 30px; margin-bottom: 50px;">
+        
+        <!-- Free Plan -->
+        <div class="glass-panel" style="padding: 32px; display: flex; flex-direction: column; position: relative;">
+            <div style="margin-bottom: 24px;">
+                <span class="badge badge-other" style="font-size: 12px; margin-bottom: 12px; display: inline-block;">Free Tier</span>
+                <h3 style="font-size: 24px; margin-bottom: 8px;">Free Plan</h3>
+                <p style="color: var(--text-secondary); font-size: 14px; min-height: 40px;">Basic expense tracking and monthly logging.</p>
+            </div>
+            
+            <div style="margin-bottom: 30px;">
+                <div style="font-size: 40px; font-weight: 800; font-family: var(--font-heading);">$0.00</div>
+                <div style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">Free Forever</div>
+            </div>
+            
+            <ul style="list-style: none; padding: 0; margin: 0 0 30px 0; flex-grow: 1; display: flex; flex-direction: column; gap: 12px; font-size: 14px; color: var(--text-secondary);">
+                <li><i class="fa-solid fa-circle-check" style="color: var(--color-success); margin-right: 8px;"></i> Basic expense logging</li>
+                <li><i class="fa-solid fa-circle-check" style="color: var(--color-success); margin-right: 8px;"></i> Monthly summaries</li>
+                <li><i class="fa-solid fa-circle-check" style="color: var(--color-success); margin-right: 8px;"></i> Voice expense entry</li>
+                <li style="color: var(--text-muted); text-decoration: line-through;"><i class="fa-solid fa-circle-xmark" style="color: var(--color-danger); margin-right: 8px;"></i> AI advisor insight forecasting</li>
+                <li style="color: var(--text-muted); text-decoration: line-through;"><i class="fa-solid fa-circle-xmark" style="color: var(--color-danger); margin-right: 8px;"></i> Professional team workspace</li>
+            </ul>
+            
+            {% if user.profile.subscription_tier == 'free' %}
+            <button class="btn btn-secondary" style="width: 100%; justify-content: center; cursor: default;" disabled>Current Plan</button>
+            {% else %}
+            <a href="{% url 'checkout' %}?plan=free" class="btn btn-secondary" style="width: 100%; justify-content: center; text-decoration: none;">Downgrade</a>
+            {% endif %}
+        </div>
+        
+        <!-- Pro Plan -->
+        <div class="glass-panel" style="padding: 32px; display: flex; flex-direction: column; position: relative; border-color: rgba(99, 102, 241, 0.4); box-shadow: 0 8px 32px 0 rgba(99, 102, 241, 0.1);">
+            <div style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); background: var(--color-primary); color: white; padding: 4px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Popular</div>
+            
+            <div style="margin-bottom: 24px;">
+                <span class="badge badge-rent" style="font-size: 12px; margin-bottom: 12px; display: inline-block;">AI & Analytics</span>
+                <h3 style="font-size: 24px; margin-bottom: 8px;">Pro</h3>
+                <p style="color: var(--text-secondary); font-size: 14px; min-height: 40px;">Deep analytics, AI chatbot advisor, and unlimited reports.</p>
+            </div>
+            
+            <div style="margin-bottom: 30px;">
+                <div style="display: flex; align-items: baseline;">
+                    <span id="price-pro" style="font-size: 40px; font-weight: 800; font-family: var(--font-heading);">$9.99</span>
+                    <span id="period-pro" style="color: var(--text-secondary); margin-left: 4px; font-size: 14px;">/month</span>
+                </div>
+                <div id="annual-note-pro" style="color: var(--color-success); font-size: 12px; margin-top: 4px; display: none;">Billed annually ($99.90/yr)</div>
+            </div>
+            
+            <ul style="list-style: none; padding: 0; margin: 0 0 30px 0; flex-grow: 1; display: flex; flex-direction: column; gap: 12px; font-size: 14px; color: var(--text-secondary);">
+                <li><i class="fa-solid fa-circle-check" style="color: var(--color-success); margin-right: 8px;"></i> Unlimited expense logs</li>
+                <li><i class="fa-solid fa-circle-check" style="color: var(--color-success); margin-right: 8px;"></i> Deep dashboard analytics</li>
+                <li><i class="fa-solid fa-circle-check" style="color: var(--color-success); margin-right: 8px;"></i> AI predictive forecasts</li>
+                <li><i class="fa-solid fa-circle-check" style="color: var(--color-success); margin-right: 8px;"></i> PDF & CSV data downloads</li>
+                <li style="color: var(--text-muted); text-decoration: line-through;"><i class="fa-solid fa-circle-xmark" style="color: var(--color-danger); margin-right: 8px;"></i> Shared team workspaces</li>
+            </ul>
+            
+            {% if user.profile.subscription_tier == 'pro' %}
+            <button class="btn btn-secondary" style="width: 100%; justify-content: center; cursor: default;" disabled>Current Plan</button>
+            {% else %}
+            <a id="btn-pro" href="{% url 'checkout' %}?plan=pro&billing_cycle=monthly" class="btn btn-primary" style="width: 100%; justify-content: center; text-decoration: none;">Select Plan</a>
+            {% endif %}
+        </div>
+        
+        <!-- Business Plan -->
+        <div class="glass-panel" style="padding: 32px; display: flex; flex-direction: column; position: relative;">
+            <div style="margin-bottom: 24px;">
+                <span class="badge badge-health" style="font-size: 12px; margin-bottom: 12px; display: inline-block;">Collaboration</span>
+                <h3 style="font-size: 24px; margin-bottom: 8px;">Business</h3>
+                <p style="color: var(--text-secondary); font-size: 14px; min-height: 40px;">Shared team workspaces, collaborative tracking, and multi-user limits.</p>
+            </div>
+            
+            <div style="margin-bottom: 30px;">
+                <div style="display: flex; align-items: baseline;">
+                    <span id="price-business" style="font-size: 40px; font-weight: 800; font-family: var(--font-heading);">$19.99</span>
+                    <span id="period-business" style="color: var(--text-secondary); margin-left: 4px; font-size: 14px;">/month</span>
+                </div>
+                <div id="annual-note-business" style="color: var(--color-success); font-size: 12px; margin-top: 4px; display: none;">Billed annually ($199.90/yr)</div>
+            </div>
+            
+            <ul style="list-style: none; padding: 0; margin: 0 0 30px 0; flex-grow: 1; display: flex; flex-direction: column; gap: 12px; font-size: 14px; color: var(--text-secondary);">
+                <li><i class="fa-solid fa-circle-check" style="color: var(--color-success); margin-right: 8px;"></i> All Pro features</li>
+                <li><i class="fa-solid fa-circle-check" style="color: var(--color-success); margin-right: 8px;"></i> Shared team workspaces</li>
+                <li><i class="fa-solid fa-circle-check" style="color: var(--color-success); margin-right: 8px;"></i> Multi-user budget planning</li>
+                <li><i class="fa-solid fa-circle-check" style="color: var(--color-success); margin-right: 8px;"></i> Advanced reporting filters</li>
+                <li style="color: var(--text-muted); text-decoration: line-through;"><i class="fa-solid fa-circle-xmark" style="color: var(--color-danger); margin-right: 8px;"></i> API integrations</li>
+            </ul>
+            
+            {% if user.profile.subscription_tier == 'business' %}
+            <button class="btn btn-secondary" style="width: 100%; justify-content: center; cursor: default;" disabled>Current Plan</button>
+            {% else %}
+            <a id="btn-business" href="{% url 'checkout' %}?plan=business&billing_cycle=monthly" class="btn btn-primary" style="width: 100%; justify-content: center; text-decoration: none;">Select Plan</a>
+            {% endif %}
+        </div>
+        
+        <!-- Enterprise Plan -->
+        <div class="glass-panel" style="padding: 32px; display: flex; flex-direction: column; position: relative;">
+            <div style="margin-bottom: 24px;">
+                <span class="badge badge-bills" style="font-size: 12px; margin-bottom: 12px; display: inline-block;">Scale & API</span>
+                <h3 style="font-size: 24px; margin-bottom: 8px;">Enterprise</h3>
+                <p style="color: var(--text-secondary); font-size: 14px; min-height: 40px;">Unlimited users, developer API keys, and priority dedicated support.</p>
+            </div>
+            
+            <div style="margin-bottom: 30px;">
+                <div style="display: flex; align-items: baseline;">
+                    <span id="price-enterprise" style="font-size: 40px; font-weight: 800; font-family: var(--font-heading);">$49.99</span>
+                    <span id="period-enterprise" style="color: var(--text-secondary); margin-left: 4px; font-size: 14px;">/month</span>
+                </div>
+                <div id="annual-note-enterprise" style="color: var(--color-success); font-size: 12px; margin-top: 4px; display: none;">Billed annually ($499.90/yr)</div>
+            </div>
+            
+            <ul style="list-style: none; padding: 0; margin: 0 0 30px 0; flex-grow: 1; display: flex; flex-direction: column; gap: 12px; font-size: 14px; color: var(--text-secondary);">
+                <li><i class="fa-solid fa-circle-check" style="color: var(--color-success); margin-right: 8px;"></i> All Business features</li>
+                <li><i class="fa-solid fa-circle-check" style="color: var(--color-success); margin-right: 8px;"></i> Unlimited members / department limits</li>
+                <li><i class="fa-solid fa-circle-check" style="color: var(--color-success); margin-right: 8px;"></i> Custom API key endpoints</li>
+                <li><i class="fa-solid fa-circle-check" style="color: var(--color-success); margin-right: 8px;"></i> Dedicated support ticketing queue</li>
+                <li><i class="fa-solid fa-circle-check" style="color: var(--color-success); margin-right: 8px;"></i> Custom branding controls</li>
+            </ul>
+            
+            {% if user.profile.subscription_tier == 'enterprise' %}
+            <button class="btn btn-secondary" style="width: 100%; justify-content: center; cursor: default;" disabled>Current Plan</button>
+            {% else %}
+            <a id="btn-enterprise" href="{% url 'checkout' %}?plan=enterprise&billing_cycle=monthly" class="btn btn-primary" style="width: 100%; justify-content: center; text-decoration: none;">Select Plan</a>
+            {% endif %}
+        </div>
+        
+    </div>
+</div>
+
+<script>
+    let currentBilling = 'monthly';
+    
+    const prices = {
+        'pro': {'monthly': '$9.99', 'annual': '$99.90'},
+        'business': {'monthly': '$19.99', 'annual': '$199.90'},
+        'enterprise': {'monthly': '$49.99', 'annual': '$499.90'}
+    };
+
+    function setBillingCycle(cycle) {
+        currentBilling = cycle;
+        
+        // Toggle buttons active classes
+        const mBtn = document.getElementById('toggle-monthly');
+        const aBtn = document.getElementById('toggle-annual');
+        
+        if (cycle === 'monthly') {
+            mBtn.className = 'btn btn-primary';
+            aBtn.className = 'btn btn-secondary';
+            aBtn.style.border = 'none';
+        } else {
+            mBtn.className = 'btn btn-secondary';
+            mBtn.style.border = 'none';
+            aBtn.className = 'btn btn-primary';
+        }
+        
+        // Update prices in DOM
+        for (const plan of ['pro', 'business', 'enterprise']) {
+            document.getElementById(`price-${plan}`).innerText = prices[plan][cycle];
+            document.getElementById(`period-${plan}`).innerText = cycle === 'monthly' ? '/month' : '/year';
+            
+            const note = document.getElementById(`annual-note-${plan}`);
+            if (note) {
+                note.style.display = cycle === 'annual' ? 'block' : 'none';
+            }
+            
+            const btn = document.getElementById(`btn-${plan}`);
+            if (btn) {
+                btn.href = `{% url 'checkout' %}?plan=${plan}&billing_cycle=${cycle}`;
+            }
+        }
+    }
+</script>
+{% endblock %}

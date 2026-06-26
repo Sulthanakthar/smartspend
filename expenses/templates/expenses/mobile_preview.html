@@ -1,0 +1,218 @@
+{% extends 'expenses/base.html' %}
+{% load static %}
+{% block title %}Mobile Experience Simulator - SmartSpend{% endblock %}
+{% block page_title %}Mobile Experience & Widget Simulator{% endblock %}
+
+{% block content %}
+<div style="max-width: 1000px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1.2fr; gap: 40px; align-items: start; padding-bottom: 40px;">
+    
+    <!-- Left panel: Phone Simulator -->
+    <div style="display: flex; justify-content: center; position: relative;">
+        <!-- Glassmorphic Phone Device -->
+        <div style="width: 330px; height: 660px; border-radius: 40px; border: 1px solid rgba(255,255,255,0.15); background: #0b0f19; box-shadow: var(--shadow-card); padding: 18px; position: relative; display: flex; flex-direction: column; overflow: hidden;">
+            <!-- Top notch / speaker -->
+            <div style="width: 120px; height: 24px; background: #000; border-radius: 0 0 16px 16px; position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 10; display: flex; align-items: center; justify-content: center;">
+                <div style="width: 40px; height: 4px; background: #333; border-radius: 2px; margin-bottom: 6px;"></div>
+            </div>
+            
+            <!-- Phone Screen content -->
+            <div style="flex-grow: 1; border-radius: 28px; background: linear-gradient(180deg, #090d16 0%, #111827 100%); padding: 16px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; position: relative; border: 1px solid rgba(255,255,255,0.05); margin-top: 10px;">
+                
+                <!-- Simulated push notification popup inside screen -->
+                <div id="sim-notification" class="glass-panel" style="display: none; padding: 12px; border-radius: 12px; border-color: rgba(99,102,241,0.4); background: rgba(21, 29, 45, 0.95); position: absolute; top: 12px; left: 12px; right: 12px; z-index: 100; box-shadow: 0 4px 20px rgba(0,0,0,0.5); transform: translateY(-50px); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                    <div style="display: flex; gap: 10px; align-items: flex-start;">
+                        <span style="font-size: 18px;">🔔</span>
+                        <div style="text-align: left; font-size: 11px;">
+                            <strong style="color: var(--color-primary); display: block;" id="sim-notif-title">SmartSpend Alert</strong>
+                            <span style="color: var(--text-primary); line-height: 1.3;" id="sim-notif-body">You are nearing your Food budget limit!</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Phone Header bar -->
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 8px;">
+                    <span>9:41 AM</span>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <i class="fa-solid fa-signal"></i>
+                        <i class="fa-solid fa-wifi"></i>
+                        <i class="fa-solid fa-battery-full" style="font-size: 13px;"></i>
+                    </div>
+                </div>
+
+                <!-- Widget 1: Daily Spending Widget -->
+                <div class="glass-panel" style="padding: 16px; border-radius: 16px; background: rgba(99,102,241,0.07); border-color: rgba(99,102,241,0.2); text-align: left;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; color: var(--color-primary);">Daily Spend Widget</span>
+                        <i class="fa-solid fa-wallet" style="font-size: 12px; color: var(--color-primary);"></i>
+                    </div>
+                    <div style="font-size: 20px; font-weight: 800; color: var(--text-primary);">
+                        {{ prefs.currency_symbol }}{{ daily_spent|floatformat:2 }}
+                    </div>
+                    <div style="font-size: 9px; color: var(--text-secondary); margin-top: 4px;">Logged today across all categories</div>
+                </div>
+
+                <!-- Widget 2: Budgets Widget -->
+                <div class="glass-panel" style="padding: 16px; border-radius: 16px; text-align: left;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; color: var(--color-success);">Budget Limits</span>
+                        <i class="fa-solid fa-bullseye" style="font-size: 12px; color: var(--color-success);"></i>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        {% for b in budget_data %}
+                        <div>
+                            <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 2px;">
+                                <span>{{ b.category }}</span>
+                                <span style="color: var(--text-secondary);">{{ prefs.currency_symbol }}{{ b.spent|floatformat:0 }}/{{ b.limit|floatformat:0 }}</span>
+                            </div>
+                            <div class="progress-bar-container" style="height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden;">
+                                <div class="progress-bar-fill {% if b.percentage >= 90 %}danger{% elif b.percentage >= 80 %}warning{% endif %}" style="width: {{ b.percentage }}%; height: 100%;"></div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p style="font-size: 11px; color: var(--text-secondary); font-style: italic; text-align: center;">No active category budgets set.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Simulated Voice Command Log -->
+                <div class="glass-panel" style="padding: 16px; border-radius: 16px; flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end; min-height: 180px; text-align: left;">
+                    <div style="font-size: 10px; font-weight: 700; color: var(--text-muted); margin-bottom: auto; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-microphone-lines" style="color: var(--color-primary);"></i>
+                        Voice Assistant Interface
+                    </div>
+                    
+                    <div id="sim-voice-transcript" style="font-size: 12px; font-weight: 500; font-style: italic; color: var(--text-secondary); margin-bottom: 8px; border-left: 2px solid var(--color-primary); padding-left: 8px;">
+                        "Add expense of 450 rupees on food"
+                    </div>
+                    
+                    <div id="sim-voice-reply" style="font-size: 11px; color: var(--color-success); background: rgba(16,185,129,0.05); border: 1px dashed rgba(16,185,129,0.2); padding: 8px; border-radius: 8px; line-height: 1.3;">
+                        🔊 Response: "Added expense of ₹450.00 under Food category."
+                    </div>
+                </div>
+
+                <!-- Phone Home Button Indicator -->
+                <div style="width: 100px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; margin: 4px auto 0;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right panel: Controls & Simulation Actions -->
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+        
+        <!-- Push Notification Generator Card -->
+        <div class="glass-panel" style="padding: 28px; text-align: left;">
+            <h4 style="font-size: 18px; font-weight: 700; margin-bottom: 12px;">
+                <i class="fa-solid fa-bell" style="color: var(--color-primary); margin-right: 8px;"></i>
+                Push Notification Simulator
+            </h4>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">Trigger simulated smart push alerts onto the phone interface to test event-based automations.</p>
+            
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <button onclick="triggerNotification('⚠️ Budget Breach Alert!', 'Your category Rent spending is at 95% of your set budget limit!')" class="btn btn-secondary" style="justify-content: flex-start; text-align: left; padding: 12px; border-radius: 8px; border-color: rgba(239,68,68,0.3);">
+                    💥 Budget Exceeded warning
+                </button>
+                <button onclick="triggerNotification('💸 Spending Spike Warning!', 'A transaction of ₹8,500.00 was logged! This is 4x your average expense size.')" class="btn btn-secondary" style="justify-content: flex-start; text-align: left; padding: 12px; border-radius: 8px; border-color: rgba(245,158,11,0.3);">
+                    🚨 Category spending spike warning
+                </button>
+                <button onclick="triggerNotification('🎯 Savings Goal Reached!', 'Congratulations! You reached your savings challenge target of ₹25,000!')" class="btn btn-secondary" style="justify-content: flex-start; text-align: left; padding: 12px; border-radius: 8px; border-color: rgba(16,185,129,0.3);">
+                    🎉 Savings milestone achievement
+                </button>
+            </div>
+        </div>
+
+        <!-- Voice Command Emulator Card -->
+        <div class="glass-panel" style="padding: 28px; text-align: left;">
+            <h4 style="font-size: 18px; font-weight: 700; margin-bottom: 12px;">
+                <i class="fa-solid fa-microphone" style="color: var(--color-success); margin-right: 8px;"></i>
+                Voice Command Emulator
+            </h4>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">Select or enter a voice command, and emulate the mobile assistant speech-to-text response.</p>
+            
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label for="emulated-voice-input">Choose Voice Command</label>
+                <select id="emulated-voice-input" class="form-select" style="border-radius: 8px;" onchange="updateVoiceTranscript(this.value)">
+                    <option value="spent 150 rupees on travel taxi">"Spent 150 rupees on travel taxi"</option>
+                    <option value="logged 2000 for bills electricity">"Logged 2000 for bills electricity"</option>
+                    <option value="how much did i spend on food">"How much did I spend on food?"</option>
+                    <option value="predict my next month expenses">"Predict my next month expenses"</option>
+                </select>
+            </div>
+            
+            <button onclick="triggerVoiceEmulation()" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 12px; border-radius: 8px; background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);">
+                <i class="fa-solid fa-play" style="margin-right: 8px;"></i> Run Voice Command
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function triggerNotification(title, message) {
+        const notif = document.getElementById('sim-notification');
+        const notifTitle = document.getElementById('sim-notif-title');
+        const notifBody = document.getElementById('sim-notif-body');
+        
+        notifTitle.innerText = title;
+        notifBody.innerText = message;
+        
+        // Slide in
+        notif.style.display = 'block';
+        setTimeout(() => {
+            notif.style.transform = 'translateY(0)';
+            notif.style.opacity = '1';
+        }, 50);
+
+        // Slide out after 5 seconds
+        setTimeout(() => {
+            notif.style.transform = 'translateY(-50px)';
+            notif.style.opacity = '0';
+            setTimeout(() => {
+                notif.style.display = 'none';
+            }, 300);
+        }, 5000);
+    }
+
+    function updateVoiceTranscript(val) {
+        document.getElementById('sim-voice-transcript').innerText = `"${val}"`;
+    }
+
+    function triggerVoiceEmulation() {
+        const query = document.getElementById('emulated-voice-input').value;
+        const replyEl = document.getElementById('sim-voice-reply');
+        
+        replyEl.innerHTML = `🔊 Processing voice query...`;
+        
+        // Post to chatbot endpoint via AJAX to get actual AI assistant response
+        fetch("{% url 'chatbot_query' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: new URLSearchParams({ query: query })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                // Strips HTML markdown stars for clean speak look
+                const cleanReply = data.reply.replace(/\*\*/g, '').replace(/\*/g, '');
+                replyEl.innerHTML = `🔊 Response: "${cleanReply}"`;
+                
+                // Triggers native browser speech synthesis (Text-to-Speech)
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel(); // stop current audio
+                    const utterance = new SpeechSynthesisUtterance(cleanReply);
+                    utterance.rate = 1.0;
+                    window.speechSynthesis.speak(utterance);
+                }
+            } else {
+                replyEl.innerHTML = `🔊 Error: ${data.error}`;
+            }
+        })
+        .catch(err => {
+            replyEl.innerHTML = `🔊 Connection error.`;
+        });
+    }
+</script>
+{% endblock %}

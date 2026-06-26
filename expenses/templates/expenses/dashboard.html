@@ -1,0 +1,507 @@
+{% extends 'expenses/base.html' %}
+{% load static %}
+{% block title %}Dashboard - SmartSpend{% endblock %}
+
+{% block content %}
+{% if not user.profile.subscription_tier or user.profile.subscription_tier == 'free' %}
+<div class="glass-panel" style="padding: 12px; margin-bottom: 24px; text-align: center; background: rgba(99,102,241,0.03); border-color: rgba(99,102,241,0.15);">
+    <span style="font-size: 9px; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 4px; letter-spacing: 1px;">Sponsored Recommendation</span>
+    <a href="{% url 'affiliate_offers' %}" style="text-decoration: none; color: var(--color-primary); font-size: 13px; font-weight: 600;">
+        💳 Get the SmartSpend Platinum Credit Card for 5% cashback on all tracking categories! Apply Now &rarr;
+    </a>
+</div>
+{% endif %}
+
+<!-- Dashboard Core Metrics -->
+<div class="dashboard-grid">
+    <div class="metric-card glass-panel">
+        <div class="metric-header">
+            <span>Total Monthly Expenses</span>
+            <div class="metric-icon"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+        </div>
+        <div class="metric-value">{{ prefs.currency_symbol }}{{ total_expense|floatformat:2 }}</div>
+        <div class="metric-change">Tracking for {% now "F Y" %}</div>
+    </div>
+    
+    <div class="metric-card glass-panel success">
+        <div class="metric-header">
+            <span>Highest Spending Category</span>
+            <div class="metric-icon"><i class="fa-solid fa-fire"></i></div>
+        </div>
+        <div class="metric-value" style="font-size: 24px;">{{ highest_category }}</div>
+        <div class="metric-change">Spent: {{ prefs.currency_symbol }}{{ highest_cat_amount|floatformat:2 }}</div>
+    </div>
+    
+    <div class="metric-card glass-panel {% if budget_alerts %}danger{% endif %}">
+        <div class="metric-header">
+            <span>Budget Alerts</span>
+            <div class="metric-icon"><i class="fa-solid fa-bell"></i></div>
+        </div>
+        <div class="metric-value" style="font-size: 24px;">{{ budget_alerts|length }} Active</div>
+        <div class="metric-change">
+            {% if budget_alerts %}
+                Action required on categories
+            {% else %}
+                All budgets in good standing
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Voice Expense & Quick Actions Bar -->
+<div class="glass-panel voice-recorder-section" style="margin-bottom: 24px;">
+    <div style="text-align: left;">
+        <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"><i class="fa-solid fa-microphone-lines" style="color: var(--color-primary); margin-right: 8px;"></i> Voice Input Tracker</h4>
+        <p style="font-size: 12px; color: var(--text-secondary);">Click the mic and speak: "spent 150 on food" or "paid 5000 for rent"</p>
+    </div>
+    
+    <div class="transcript-display" id="transcript-display">Click microphone to start recording speech...</div>
+    
+    <div class="mic-btn-container">
+        <button class="mic-btn" id="mic-btn" onclick="toggleSpeechRecording()">
+            <i class="fa-solid fa-microphone" id="mic-icon"></i>
+        </button>
+    </div>
+</div>
+
+<!-- Main Row: Graphs, Budgets, and OCR Receipt Scanner -->
+<div class="chart-row">
+    <!-- Left Panel: Analytics Charts -->
+    <div class="glass-panel" style="padding: 24px; min-height: 400px; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h4 style="font-size: 18px; font-weight: 700;"><i class="fa-solid fa-chart-column" style="color: var(--color-primary); margin-right: 8px;"></i> Visual Analytics</h4>
+            <a href="{% url 'analytics' %}" style="font-size: 12px; color: var(--color-primary); text-decoration: none; font-weight: 600;">View Detailed Analysis <i class="fa-solid fa-chevron-right"></i></a>
+        </div>
+        <div style="flex-grow: 1; position: relative; height: 320px;">
+            <canvas id="dashboardChart"></canvas>
+        </div>
+    </div>
+    
+    <!-- Right Panel: Budget Limits, AI recommendations, OCR receipt scanner -->
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+        <!-- Budget list progress tracker -->
+        <div class="glass-panel" style="padding: 24px; max-height: 250px; overflow-y: auto;">
+            <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;"><i class="fa-solid fa-bullseye" style="color: var(--color-primary); margin-right: 8px;"></i> Monthly Budgets</h4>
+            {% if budget_progress %}
+                <div style="display: flex; flex-direction: column; gap: 14px;">
+                    {% for b in budget_progress %}
+                        <div>
+                            <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 500; margin-bottom: 4px;">
+                                <span>{{ b.category }}</span>
+                                <span style="color: var(--text-secondary);">{{ prefs.currency_symbol }}{{ b.spent|floatformat:2 }} / {{ prefs.currency_symbol }}{{ b.limit|floatformat:2 }}</span>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill {% if b.percentage >= 100 %}danger{% elif b.percentage >= 80 %}warning{% endif %}" style="width: {{ b.percentage }}%"></div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p style="font-size: 13px; color: var(--text-secondary); font-style: italic; text-align: center; margin-top: 10px;">
+                    No budgets configured yet.<br>
+                    <a href="{% url 'budget_planner' %}" style="color: var(--color-primary); font-weight: 600; text-decoration: none; font-size: 12px; display: inline-block; margin-top: 6px;">Setup Budgets</a>
+                </p>
+            {% endif %}
+        </div>
+        
+        <!-- OCR Receipt Scanner Dropzone -->
+        <div class="glass-panel" style="padding: 20px;">
+            <h4 style="font-size: 15px; font-weight: 700; margin-bottom: 12px;"><i class="fa-solid fa-receipt" style="color: var(--color-primary); margin-right: 8px;"></i> OCR Receipt Scanner</h4>
+            <div id="ocr-dropzone" style="border: 2px dashed var(--border-color); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: var(--transition);" ondragover="event.preventDefault(); this.style.borderColor='var(--color-primary)';" ondragleave="this.style.borderColor='var(--border-color)';" ondrop="handleReceiptDrop(event)">
+                <i class="fa-solid fa-cloud-arrow-up" style="font-size: 24px; color: var(--text-secondary); margin-bottom: 8px;"></i>
+                <div style="font-size: 12px; font-weight: 600; color: var(--text-primary);">Drop receipt image or click</div>
+                <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">PNG, JPG supported. Powered by Tesseract.js</div>
+                <input type="file" id="ocr-file-input" style="display: none;" accept="image/*" onchange="handleReceiptSelect(event)">
+            </div>
+            <div id="ocr-status" style="font-size: 11px; margin-top: 8px; color: var(--text-secondary); display: none;">
+                <i class="fa-solid fa-spinner fa-spin"></i> Processing OCR receipt...
+            </div>
+        </div>
+        
+        <!-- AI Recommendations Insights -->
+        <div class="glass-panel" style="padding: 24px;">
+            <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 12px;"><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--color-primary); margin-right: 8px;"></i> AI Insights</h4>
+            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px; line-height: 1.4;">
+                {% for insight in insights %}
+                    <div style="display: flex; gap: 10px; align-items: flex-start;">
+                        <span style="margin-top: 2px;">•</span>
+                        <span>{{ insight|safe }}</span>
+                    </div>
+                {% empty %}
+                    <p style="color: var(--text-secondary); font-style: italic;">Provide more transaction inputs to receive tailored insights.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Row: Recent Transactions list & Quick Actions -->
+<div class="glass-panel" style="padding: 28px; margin-bottom: 32px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h4 style="font-size: 18px; font-weight: 700;"><i class="fa-solid fa-clock-rotate-left" style="color: var(--color-primary); margin-right: 8px;"></i> Recent Transactions</h4>
+        <div style="display: flex; gap: 12px;">
+            <button onclick="startTour()" class="btn btn-secondary btn-sm" style="background: rgba(99, 102, 241, 0.15); color: var(--color-primary); border-color: rgba(99, 102, 241, 0.3);"><i class="fa-solid fa-graduation-cap"></i> Guided Tour</button>
+            <button onclick="openAddModal()" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i> Add Manually</button>
+            <a href="{% url 'history' %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-list"></i> Full History</a>
+        </div>
+    </div>
+    
+    <div class="data-table-container">
+        <table class="data-table" id="recent-expenses-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for expense in recent_transactions %}
+                <tr id="expense-row-{{ expense.expense_id }}">
+                    <td>{{ expense.expense_date|date:"Y-m-d" }}</td>
+                    <td><span class="badge badge-{{ expense.category|lower }}">{{ expense.category }}</span></td>
+                    <td>{{ expense.description }}</td>
+                    <td style="font-weight: 700; color: var(--color-danger);">{{ prefs.currency_symbol }}{{ expense.amount|floatformat:2 }}</td>
+                    <td>
+                        <button
+                            class="btn btn-secondary"
+                            style="padding: 6px 10px; font-size: 12px;"
+                            onclick="openEditModal(this)"
+                            data-expense-id="{{ expense.expense_id }}"
+                            data-category="{{ expense.category|escape }}"
+                            data-description="{{ expense.description|escape }}"
+                            data-amount="{{ expense.amount|escape }}"
+                            data-date="{{ expense.expense_date|date:'Y-m-d'|escape }}"
+                        ><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteExpense('{{ expense.expense_id }}')" class="btn btn-danger" style="padding: 6px 10px; font-size: 12px;"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr id="empty-table-row">
+                    <td colspan="5" style="text-align: center; color: var(--text-secondary); font-style: italic; padding: 24px;">No transactions recorded. Speak your first expense to begin!</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Floating AI Chatbot Widget -->
+<div class="chatbot-wrapper">
+    <button class="chatbot-toggle-btn" onclick="toggleChatbot()">
+        <i class="fa-solid fa-comments" id="chat-toggle-icon"></i>
+    </button>
+    
+    <div class="chatbot-box glass-panel" id="chatbot-box">
+        <div class="chatbot-header">
+            <span style="font-weight: 600;"><i class="fa-solid fa-robot"></i> SmartSpend AI Assistant</span>
+            <button onclick="toggleChatbot()" style="background: none; border: none; color: white; cursor: pointer; font-size: 16px;"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="chatbot-messages" id="chatbot-messages">
+            <div class="chat-msg bot">
+                Hello {{ user.username }}! I am your SmartSpend AI assistant. Ask me questions about your budgets, category spending, or get savings advice.
+            </div>
+        </div>
+        <div class="chatbot-input-area">
+            <input type="text" class="chatbot-input" id="chatbot-input" placeholder="Type a message or say something..." onkeypress="handleChatKeypress(event)">
+            <button class="chatbot-send-btn" onclick="sendChatbotMessage()">
+                <i class="fa-solid fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modals: Add Expense Modal -->
+<div class="modal-overlay" id="add-modal">
+    <div class="modal-content glass-panel">
+        <div class="modal-header">
+            <h4 style="font-size: 18px; font-weight: 700;">Add New Transaction</h4>
+            <span class="modal-close" onclick="closeAddModal()">&times;</span>
+        </div>
+        <form id="add-expense-form" onsubmit="submitAddExpenseForm(event)">
+            <div class="form-group">
+                <label for="add-category">Category</label>
+                {{ expense_form.category }}
+            </div>
+            <div class="form-group">
+                <label for="add-description">Description</label>
+                {{ expense_form.description }}
+            </div>
+            <div class="form-group">
+                <label for="add-amount">Amount ({{ prefs.currency_symbol }})</label>
+                {{ expense_form.amount }}
+            </div>
+            <div class="form-group">
+                <label for="add-date">Expense Date</label>
+                {{ expense_form.expense_date }}
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+                <button type="button" class="btn btn-secondary" onclick="closeAddModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Expense</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modals: Edit Expense Modal -->
+<div class="modal-overlay" id="edit-modal">
+    <div class="modal-content glass-panel">
+        <div class="modal-header">
+            <h4 style="font-size: 18px; font-weight: 700;">Edit Transaction</h4>
+            <span class="modal-close" onclick="closeEditModal()">&times;</span>
+        </div>
+        <form id="edit-expense-form" onsubmit="submitEditExpenseForm(event)">
+            <input type="hidden" id="edit-id">
+            <div class="form-group">
+                <label for="edit-category">Category</label>
+                <select name="category" id="edit-category" class="form-select">
+                    <option value="Food">Food</option>
+                    <option value="Travel">Travel</option>
+                    <option value="Rent">Rent</option>
+                    <option value="Bills">Bills</option>
+                    <option value="Shopping">Shopping</option>
+                    <option value="Entertainment">Entertainment</option>
+                    <option value="Health">Health</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="edit-description">Description</label>
+                <input type="text" id="edit-description" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="edit-amount">Amount ({{ prefs.currency_symbol }})</label>
+                <input type="number" id="edit-amount" class="form-control" step="0.01" required>
+            </div>
+            <div class="form-group">
+                <label for="edit-date">Expense Date</label>
+                <input type="date" id="edit-date" class="form-control" required>
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+                <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Onboarding Tour Modal Overlay -->
+<div id="onboarding-tour" class="modal-overlay" style="display: none; align-items: center; justify-content: center; z-index: 10000; background: rgba(9, 13, 22, 0.75); backdrop-filter: blur(5px);">
+    <div class="glass-panel" style="max-width: 480px; width: 90%; padding: 32px; border-radius: 24px; position: relative; border: 1px solid var(--border-color); box-shadow: var(--shadow-card); background: var(--bg-card); text-align: center;">
+        
+        <!-- Step progress dots -->
+        <div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 24px;" id="tour-dots">
+            <span class="tour-dot active" style="width: 12px; height: 8px; border-radius: 6px; background: var(--color-primary); display: inline-block;"></span>
+            <span class="tour-dot" style="width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); display: inline-block;"></span>
+            <span class="tour-dot" style="width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); display: inline-block;"></span>
+            <span class="tour-dot" style="width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); display: inline-block;"></span>
+            <span class="tour-dot" style="width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); display: inline-block;"></span>
+        </div>
+        
+        <!-- Step Title -->
+        <h4 id="tour-title" style="font-size: 20px; font-weight: 800; margin-bottom: 12px; font-family: var(--font-heading);">Welcome to SmartSpend!</h4>
+        
+        <!-- Step Description -->
+        <p id="tour-desc" style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 28px;">Let's take a quick 1-minute guided tour to help you master your new financial command center.</p>
+        
+        <!-- Buttons -->
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+            <button class="btn btn-secondary" onclick="skipTour()" style="font-size: 12px; padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border-color);">Skip Tour</button>
+            <button class="btn btn-primary" id="tour-next-btn" onclick="nextTourStep()" style="font-size: 12px; padding: 8px 24px; border-radius: 20px;">Get Started &rarr;</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- CDNs: Chart.js and Tesseract.js (for browser OCR scanner) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+<!-- Custom App Scripts -->
+<script>
+    // Variables passed from Django templates to javascript
+    const currencySymbol = "{{ prefs.currency_symbol }}";
+    const voiceRate = parseFloat("{{ prefs.voice_rate|default:1.0 }}");
+    const langCode = "{{ prefs.language|default:'en' }}";
+    
+    // AJAX routes
+    const apiParseVoiceUrl = "{% url 'parse_voice' %}";
+    const apiChatbotUrl = "{% url 'chatbot_query' %}";
+    const apiAddExpenseUrl = "{% url 'add_expense_ajax' %}";
+    const apiEditExpenseUrl = "{% url 'edit_expense_ajax' %}";
+    const apiDeleteExpenseUrl = "{% url 'delete_expense_ajax' %}";
+</script>
+<script src="{% static 'js/main.js' %}?v=3"></script>
+<script>
+    // Config Chart.js values
+    const chartLabels = ['Food', 'Travel', 'Rent', 'Bills', 'Shopping', 'Entertainment', 'Health', 'Other'];
+
+    const chartData = [
+        {% for category in CATEGORY_CHOICES %}
+            0{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    // Populate chart values dynamically
+    const initialChartValues = {
+        'Food': 0,
+        'Travel': 0,
+        'Rent': 0,
+        'Bills': 0,
+        'Shopping': 0,
+        'Entertainment': 0,
+        'Health': 0,
+        'Other': 0
+    };
+
+    {% for b in budget_progress %}
+        initialChartValues['{{ b.category }}'] = parseFloat('{{ b.spent }}');
+    {% endfor %}
+
+    const chartColors = [
+        '#f59e0b',
+        '#06b6d4',
+        '#6366f1',
+        '#ef4444',
+        '#ec4899',
+        '#a855f7',
+        '#10b981',
+        '#6b7280'
+    ];
+</script>
+<script src="{% static 'js/charts.js' %}"></script>
+
+<!-- Onboarding Tour Logic -->
+<script>
+    const tourSteps = [
+        {
+            title: "Welcome to SmartSpend! 🚀",
+            desc: "Let's take a quick 1-minute guided tour to help you master your new financial command center.",
+            target: null
+        },
+        {
+            title: "Total Monthly Expenses 💳",
+            desc: "This card shows your total spending for the current month in real time, automatically using your selected currency preference.",
+            target: ".dashboard-grid > div:nth-child(1)"
+        },
+        {
+            title: "Voice Input Tracker 🎙️",
+            desc: "Log expenses instantly without typing! Just click the microphone button, and say something like: 'spent 150 rupees on food today'. Try it out later!",
+            target: ".voice-recorder-section"
+        },
+        {
+            title: "Visual Analytics 📊",
+            desc: "A beautiful interactive chart breaks down your expenses by category, letting you spot spending hotspots and trends at a glance.",
+            target: "canvas#dashboardChart"
+        },
+        {
+            title: "AI Chatbot & Assistant 🤖",
+            desc: "Need insights, savings advice, or custom forecasts? Toggle the SmartSpend AI Assistant in the bottom right corner to ask your queries!",
+            target: ".chatbot-wrapper"
+        }
+    ];
+
+    let currentTourStep = 0;
+
+    function startTour() {
+        currentTourStep = 0;
+        document.getElementById('onboarding-tour').style.display = 'flex';
+        showTourStep(0);
+    }
+
+    function showTourStep(index) {
+        const step = tourSteps[index];
+        document.getElementById('tour-title').innerText = step.title;
+        document.getElementById('tour-desc').innerText = step.desc;
+        
+        // Update dots
+        const dots = document.querySelectorAll('.tour-dot');
+        dots.forEach((dot, idx) => {
+            if (idx === index) {
+                dot.className = 'tour-dot active';
+                dot.style.background = 'var(--color-primary)';
+                dot.style.width = '12px';
+                dot.style.borderRadius = '6px';
+            } else {
+                dot.className = 'tour-dot';
+                dot.style.background = 'var(--text-muted)';
+                dot.style.width = '8px';
+                dot.style.borderRadius = '50%';
+            }
+        });
+        
+        // Remove previous target highlights
+        document.querySelectorAll('.tour-highlight').forEach(el => {
+            el.classList.remove('tour-highlight');
+            el.style.outline = 'none';
+            el.style.boxShadow = 'none';
+            el.style.position = '';
+            el.style.zIndex = '';
+        });
+        
+        // Highlight target element if present
+        if (step.target) {
+            const el = document.querySelector(step.target);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.classList.add('tour-highlight');
+                el.style.outline = '3px solid var(--color-primary)';
+                el.style.boxShadow = '0 0 20px rgba(99, 102, 241, 0.5)';
+                el.style.position = 'relative';
+                el.style.zIndex = '9999';
+            }
+        }
+        
+        // Update button text
+        const nextBtn = document.getElementById('tour-next-btn');
+        if (index === tourSteps.length - 1) {
+            nextBtn.innerText = 'Finish Tour 🎉';
+        } else {
+            nextBtn.innerText = 'Next Step \u2192';
+        }
+    }
+
+    function nextTourStep() {
+        if (currentTourStep < tourSteps.length - 1) {
+            currentTourStep++;
+            showTourStep(currentTourStep);
+        } else {
+            finishTour();
+        }
+    }
+
+    function skipTour() {
+        finishTour();
+    }
+
+    function finishTour() {
+        // Hide modal
+        document.getElementById('onboarding-tour').style.display = 'none';
+        
+        // Remove highlights
+        document.querySelectorAll('.tour-highlight').forEach(el => {
+            el.style.outline = 'none';
+            el.style.boxShadow = 'none';
+            el.style.position = '';
+            el.style.zIndex = '';
+        });
+        
+        // Save state so it doesn't auto-start next time
+        localStorage.setItem('smartspend_tour_completed', 'true');
+    }
+
+    // Auto-trigger tour on first load
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            if (!localStorage.getItem('smartspend_tour_completed')) {
+                startTour();
+            }
+        }, 1500); // Small delay for visual comfort
+    });
+</script>
+{% endblock %}

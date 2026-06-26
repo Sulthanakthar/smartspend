@@ -1,0 +1,291 @@
+{% extends 'expenses/base.html' %}
+{% load static %}
+{% block title %}Visual Analytics - SmartSpend{% endblock %}
+{% block page_title %}Analytics & Reports{% endblock %}
+
+{% block content %}
+<!-- Range Selection Toolbar -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+    <!-- Period Selector Buttons -->
+    <div style="display: flex; gap: 4px; background: var(--bg-secondary); padding: 4px; border-radius: 12px; border: 1px solid var(--border-color);">
+        <a href="?range=daily" class="btn {% if range_type == 'daily' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding: 6px 16px; font-size: 13px; border-radius: 8px; border: none; text-decoration: none;">Daily</a>
+        <a href="?range=weekly" class="btn {% if range_type == 'weekly' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding: 6px 16px; font-size: 13px; border-radius: 8px; border: none; text-decoration: none;">Weekly</a>
+        <a href="?range=monthly" class="btn {% if range_type == 'monthly' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding: 6px 16px; font-size: 13px; border-radius: 8px; border: none; text-decoration: none;">Monthly</a>
+        <a href="?range=yearly" class="btn {% if range_type == 'yearly' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding: 6px 16px; font-size: 13px; border-radius: 8px; border: none; text-decoration: none;">Yearly</a>
+    </div>
+    
+    <!-- Export Options -->
+    <div style="display: flex; gap: 12px;">
+        <a href="{% url 'export_csv' %}" class="btn btn-secondary" style="font-size: 13px; text-decoration: none;"><i class="fa-solid fa-file-csv"></i> Export CSV</a>
+        <a href="{% url 'export_pdf' %}" class="btn btn-secondary" style="font-size: 13px; text-decoration: none;"><i class="fa-solid fa-file-pdf"></i> Export PDF</a>
+    </div>
+</div>
+
+<!-- Professional Amazon-Style KPI Dashboard Row -->
+<div class="dashboard-grid" style="margin-bottom: 28px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+    <!-- Current Period Total -->
+    <div class="metric-card glass-panel">
+        <div class="metric-header">
+            <span>
+                {% if range_type == 'daily' %}Today's Spending{% elif range_type == 'weekly' %}Weekly Spending{% elif range_type == 'yearly' %}Yearly Spending{% else %}Monthly Spending{% endif %}
+            </span>
+            <div class="metric-icon"><i class="fa-solid fa-calendar-days"></i></div>
+        </div>
+        <div class="metric-value">{{ prefs.currency_symbol }}{{ this_month_total|floatformat:2 }}</div>
+        <div class="metric-change">Current selected period</div>
+    </div>
+    
+    <!-- Period over Period Comparison -->
+    <div class="metric-card glass-panel {% if change_pct > 0 %}danger{% else %}success{% endif %}">
+        <div class="metric-header">
+            <span>
+                {% if range_type == 'daily' %}DoD Growth Rate{% elif range_type == 'weekly' %}WoW Growth Rate{% elif range_type == 'yearly' %}YoY Growth Rate{% else %}MoM Growth Rate{% endif %}
+            </span>
+            <div class="metric-icon">
+                {% if change_pct > 0 %}
+                    <i class="fa-solid fa-arrow-trend-up"></i>
+                {% else %}
+                    <i class="fa-solid fa-arrow-trend-down"></i>
+                {% endif %}
+            </div>
+        </div>
+        <div class="metric-value">
+            {% if change_pct > 0 %}+{% endif %}{{ change_pct|floatformat:1 }}%
+        </div>
+        <div class="metric-change">
+            vs. {% if range_type == 'daily' %}Yesterday{% elif range_type == 'weekly' %}Last Week{% elif range_type == 'yearly' %}Last Year{% else %}Last Month{% endif %} ({{ prefs.currency_symbol }}{{ last_month_total|floatformat:2 }})
+        </div>
+    </div>
+    
+    <!-- Average Transaction Size -->
+    <div class="metric-card glass-panel">
+        <div class="metric-header">
+            <span>Average Purchase Size</span>
+            <div class="metric-icon"><i class="fa-solid fa-cart-shopping"></i></div>
+        </div>
+        <div class="metric-value">{{ prefs.currency_symbol }}{{ average_order_value|floatformat:2 }}</div>
+        <div class="metric-change">Per order average</div>
+    </div>
+    
+    <!-- Total Purchase Count -->
+    <div class="metric-card glass-panel">
+        <div class="metric-header">
+            <span>Total Transactions</span>
+            <div class="metric-icon"><i class="fa-solid fa-box"></i></div>
+        </div>
+        <div class="metric-value">{{ total_count }}</div>
+        <div class="metric-change">Items logged this month</div>
+    </div>
+</div>
+
+<!-- Prediction Insights Alert Box -->
+{% if prediction %}
+<div class="glass-panel" style="padding: 20px; margin-bottom: 28px; border-color: rgba(99, 102, 241, 0.3); background: rgba(99, 102, 241, 0.05); display: flex; align-items: center; gap: 16px;">
+    <div style="font-size: 32px; color: var(--color-primary);"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+    <div>
+        <h4 style="font-size: 15px; font-weight: 700; margin-bottom: 4px;">SmartSpend AI Prediction for Next Month</h4>
+        <p style="font-size: 13px; color: var(--text-secondary);">
+            Based on your historical spending behavior, your projected total expense for next month is approximately 
+            <strong style="color: var(--color-primary); font-size: 15px;">{{ prefs.currency_symbol }}{{ prediction|floatformat:2 }}</strong>. 
+            Adjust your budget limits if this is above your savings target.
+        </p>
+    </div>
+</div>
+{% endif %}
+
+<!-- Grid Layout for Charts -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px;">
+    <!-- Pie Chart Category Breakdown -->
+    <div class="glass-panel" style="padding: 24px; height: 420px; display: flex; flex-direction: column;">
+        <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;"><i class="fa-solid fa-chart-pie" style="color: var(--color-primary); margin-right: 8px;"></i> Category-Wise Distribution</h4>
+        <div style="flex-grow: 1; position: relative; height: 320px;">
+            <canvas id="pieChart"></canvas>
+        </div>
+    </div>
+    
+    <!-- Bar Chart Monthly Growth -->
+    <div class="glass-panel" style="padding: 24px; height: 420px; display: flex; flex-direction: column;">
+        <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;"><i class="fa-solid fa-chart-bar" style="color: var(--color-success); margin-right: 8px;"></i> Monthly Spending Comparison</h4>
+        <div style="flex-grow: 1; position: relative; height: 320px;">
+            <canvas id="barChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Professional Amazon-Style Detailed Category Analysis Grid -->
+<div class="glass-panel" style="padding: 28px; margin-bottom: 28px;">
+    <h4 style="font-size: 18px; font-weight: 700; margin-bottom: 20px;"><i class="fa-solid fa-table-list" style="color: var(--color-primary); margin-right: 8px;"></i> Detailed Category Spending Breakdown</h4>
+    
+    <div class="data-table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Category Name</th>
+                    <th>Total Spent</th>
+                    <th>Count</th>
+                    <th>Avg. Size</th>
+                    <th>Monthly Limit</th>
+                    <th>Share of Wallet</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in category_breakdown %}
+                <tr>
+                    <td style="font-weight: 600;"><span class="badge badge-{{ item.category|lower }}">{{ item.category }}</span></td>
+                    <td style="font-weight: 700;">{{ prefs.currency_symbol }}{{ item.total_spent|floatformat:2 }}</td>
+                    <td>{{ item.count }} orders</td>
+                    <td>{{ prefs.currency_symbol }}{{ item.avg_spent|floatformat:2 }}</td>
+                    <td>
+                        {% if item.limit > 0 %}
+                            {{ prefs.currency_symbol }}{{ item.limit|floatformat:2 }}
+                        {% else %}
+                            <span style="font-style: italic; color: var(--text-muted);">None configured</span>
+                        {% endif %}
+                    </td>
+                    <td style="width: 20%;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div class="progress-bar-container" style="flex-grow: 1; margin-top: 0; background: rgba(255,255,255,0.04);">
+                                <div class="progress-bar-fill" style="width: {{ item.pct_of_total|floatformat:0 }}%;"></div>
+                            </div>
+                            <span style="font-size: 12px; font-weight: 600; width: 35px; text-align: right;">{{ item.pct_of_total|floatformat:1 }}%</span>
+                        </div>
+                    </td>
+                    <td>
+                        {% if item.status == 'exceeded' %}
+                            <span class="badge badge-bills"><i class="fa-solid fa-triangle-exclamation"></i> Over Budget</span>
+                        {% elif item.status == 'warning' %}
+                            <span class="badge badge-food"><i class="fa-solid fa-circle-exclamation"></i> Near Limit</span>
+                        {% else %}
+                            <span class="badge badge-health"><i class="fa-solid fa-circle-check"></i> Normal</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-secondary); font-style: italic; padding: 24px;">No transaction records in the current database. Record a voice or receipt expense first!</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Daily Expense progression trend line chart -->
+<div class="glass-panel" style="padding: 24px; height: 420px; display: flex; flex-direction: column; margin-bottom: 32px;">
+    <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;"><i class="fa-solid fa-chart-line" style="color: var(--color-info); margin-right: 8px;"></i> Daily Expense Growth Trend</h4>
+    <div style="flex-grow: 1; position: relative; height: 320px;">
+        <canvas id="lineChart"></canvas>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Config Chart values loaded from view context
+    const pieLabels = {{ pie_labels|safe }};
+    const pieValues = {{ pie_values|safe }};
+    
+    const barLabels = {{ bar_labels|safe }};
+    const barValues = {{ bar_values|safe }};
+    
+    const lineLabels = {{ line_labels|safe }};
+    const lineValues = {{ line_values|safe }};
+    
+    const currencySymbol = "{{ prefs.currency_symbol }}";
+    
+    const chartColors = [
+        '#f59e0b', // Food - Amber
+        '#06b6d4', // Travel - Cyan
+        '#6366f1', // Rent - Indigo
+        '#ef4444', // Bills - Red
+        '#ec4899', // Shopping - Pink
+        '#a855f7', // Entertainment - Purple
+        '#10b981', // Health - Emerald
+        '#6b7280'  // Other - Grey
+    ];
+    
+    // 1. Render Pie Chart
+    const pieCtx = document.getElementById('pieChart').getContext('2d');
+    new Chart(pieCtx, {
+        type: 'doughnut',
+        data: {
+            labels: pieLabels.length ? pieLabels : ['No Expenses Yet'],
+            datasets: [{
+                data: pieValues.length ? pieValues : [1],
+                backgroundColor: pieValues.length ? chartColors.slice(0, pieLabels.length) : ['rgba(255,255,255,0.08)'],
+                borderColor: 'transparent',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { color: 'var(--text-secondary)', font: { family: 'Plus Jakarta Sans', size: 12 } }
+                }
+            }
+        }
+    });
+
+    // 2. Render Bar Chart (Monthly totals)
+    const barCtx = document.getElementById('barChart').getContext('2d');
+    new Chart(barCtx, {
+        type: 'bar',
+        data: {
+            labels: barLabels.length ? barLabels : ['Current Month'],
+            datasets: [{
+                label: 'Expenses',
+                data: barValues.length ? barValues : [0],
+                backgroundColor: 'rgba(16, 185, 129, 0.4)',
+                borderColor: '#10b981',
+                borderWidth: 2,
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: 'var(--text-secondary)' } },
+                y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: 'var(--text-secondary)' } }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+
+    // 3. Render Line Chart (Daily trend)
+    const lineCtx = document.getElementById('lineChart').getContext('2d');
+    new Chart(lineCtx, {
+        type: 'line',
+        data: {
+            labels: lineLabels.length ? lineLabels : ['Day 1'],
+            datasets: [{
+                label: 'Cumulative Spend',
+                data: lineValues.length ? lineValues : [0],
+                backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                borderColor: '#06b6d4',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: 'var(--text-secondary)' } },
+                y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: 'var(--text-secondary)' } }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+</script>
+{% endblock %}

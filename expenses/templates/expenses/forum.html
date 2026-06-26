@@ -1,0 +1,169 @@
+{% extends 'expenses/base.html' %}
+{% block title %}Community Forum - SmartSpend{% endblock %}
+{% block page_title %}Community Support Forum{% endblock %}
+
+{% block content %}
+<div class="support-container" style="max-width: 1000px; margin: 0 auto;">
+    <!-- Forum Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <h3 style="font-size: 20px; font-weight: 800;">SmartSpend Community <span class="gradient-text">Forum</span></h3>
+            <p style="font-size: 13px; color: var(--text-secondary);">Ask questions, share advice, and connect with other SmartSpend savers worldwide.</p>
+        </div>
+        <button onclick="openForumModal()" class="btn btn-primary" style="border-radius: 8px; font-size: 13px; padding: 10px 20px;">
+            <i class="fa-solid fa-pen-to-square"></i> Ask a Question
+        </button>
+    </div>
+
+    <!-- Forum Search & Filter -->
+    <div class="glass-panel" style="padding: 16px; margin-bottom: 24px; display: flex; gap: 16px; align-items: center;">
+        <i class="fa-solid fa-magnifying-glass" style="color: var(--text-muted); font-size: 16px; margin-left: 8px;"></i>
+        <input type="text" id="forum-search" placeholder="Search discussions, topics, and tips..." onkeyup="filterForumThreads()" style="flex-grow: 1; border: none; background: transparent; color: var(--text-primary); font-size: 14px; outline: none;">
+    </div>
+
+    <!-- Forum Threads list -->
+    <div id="forum-threads-list" style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 40px;">
+        {% for post in posts %}
+        <div class="glass-panel forum-thread-card" style="padding: 24px; border-radius: 16px; transition: var(--transition); text-align: left;" data-title="{{ post.title|lower }}" data-content="{{ post.content|lower }}">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 12px;">
+                <h4 style="font-size: 16px; font-weight: 700; margin: 0;">
+                    <a href="{% url 'forum_detail' post.post_id %}" style="text-decoration: none; color: var(--color-primary); hover: underline;">
+                        {{ post.title }}
+                    </a>
+                </h4>
+                
+                <!-- Upvote counter -->
+                <button onclick="upvotePost('{{ post.post_id }}', this)" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border-color); font-size: 11px;">
+                    <i class="fa-solid fa-chevron-up"></i> <span class="upvote-count">{{ post.upvote_count }}</span>
+                </button>
+            </div>
+            
+            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 16px;">
+                {{ post.content|slice:":200" }}{% if post.content|length > 200 %}...{% endif %}
+            </p>
+            
+            <!-- Thread Footer info -->
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 12px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 20px; height: 20px; border-radius: 50%; background: linear-gradient(135deg, var(--color-primary) 0%, #3b82f6 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 9px;">
+                        {{ post.user.username|make_list|first|upper }}
+                    </div>
+                    <span>Posted by <strong>{{ post.user.username }}</strong> &bull; {{ post.created_at|date:"Y-m-d H:i" }}</span>
+                </div>
+                <a href="{% url 'forum_detail' post.post_id %}" style="text-decoration: none; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                    <i class="fa-solid fa-comment"></i> {{ post.comment_count }} Replies
+                </a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="glass-panel" style="padding: 40px; text-align: center; color: var(--text-secondary); font-style: italic;">
+            No questions asked yet. Click "Ask a Question" to start the community forum!
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Ask Question Modal -->
+<div class="modal-overlay" id="ask-forum-modal" style="display: none; align-items: center; justify-content: center; z-index: 10000; background: rgba(9, 13, 22, 0.75); backdrop-filter: blur(5px);">
+    <div class="glass-panel" style="max-width: 550px; width: 90%; padding: 32px; border-radius: 20px; position: relative; border: 1px solid var(--border-color); box-shadow: var(--shadow-card); background: var(--bg-card);">
+        <span onclick="closeForumModal()" style="position: absolute; right: 20px; top: 16px; font-size: 24px; cursor: pointer; color: var(--text-muted);">&times;</span>
+        
+        <h4 style="font-size: 18px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-circle-question" style="color: var(--color-primary);"></i>
+            Ask a Community Question
+        </h4>
+        
+        <form id="forum-post-form" onsubmit="submitForumPost(event)">
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label for="post-title">Discussion Title</label>
+                <input type="text" id="post-title" class="form-control" placeholder="e.g. Best strategies to save on electricity?" required style="border-radius: 8px;">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 24px;">
+                <label for="post-content">Details / Body Description</label>
+                <textarea id="post-content" class="form-control" rows="6" placeholder="Provide background context, questions, or helpful budgeting advice..." required style="resize: none; border-radius: 8px;"></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button type="button" onclick="closeForumModal()" class="btn btn-secondary" style="border-radius: 8px; padding: 8px 16px;">Cancel</button>
+                <button type="submit" class="btn btn-primary" style="border-radius: 8px; padding: 8px 24px;">Publish Post</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function filterForumThreads() {
+        const query = document.getElementById('forum-search').value.toLowerCase().trim();
+        const threads = document.querySelectorAll('.forum-thread-card');
+        
+        threads.forEach(thread => {
+            const title = thread.getAttribute('data-title');
+            const content = thread.getAttribute('data-content');
+            if (title.includes(query) || content.includes(query)) {
+                thread.style.display = 'block';
+            } else {
+                thread.style.display = 'none';
+            }
+        });
+    }
+
+    function openForumModal() {
+        document.getElementById('ask-forum-modal').style.display = 'flex';
+    }
+
+    function closeForumModal() {
+        document.getElementById('ask-forum-modal').style.display = 'none';
+    }
+
+    function submitForumPost(event) {
+        event.preventDefault();
+        const title = document.getElementById('post-title').value.trim();
+        const content = document.getElementById('post-content').value.trim();
+        
+        fetch("{% url 'create_forum_post_ajax' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: new URLSearchParams({ title: title, content: content })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                alert('Discussion thread posted successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        });
+    }
+
+    function upvotePost(postId, btn) {
+        fetch("{% url 'upvote_forum_post_ajax' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: new URLSearchParams({ post_id: postId })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                btn.querySelector('.upvote-count').innerText = data.count;
+                if (data.upvoted) {
+                    btn.style.color = 'var(--color-primary)';
+                    btn.style.borderColor = 'var(--color-primary)';
+                } else {
+                    btn.style.color = '';
+                    btn.style.borderColor = '';
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

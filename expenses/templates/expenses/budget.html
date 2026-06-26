@@ -1,0 +1,216 @@
+{% extends 'expenses/base.html' %}
+{% load static %}
+{% block title %}Budget Planner - SmartSpend{% endblock %}
+{% block page_title %}Budget Planner{% endblock %}
+
+{% block content %}
+<div class="chart-row">
+    <!-- Left Panel: Set Budget Form -->
+    <div class="glass-panel" style="padding: 28px; flex: 1; min-width: 280px;">
+        <h4 style="font-size: 18px; font-weight: 700; margin-bottom: 20px;">
+            <i class="fa-solid fa-square-plus" style="color: var(--color-primary); margin-right: 8px;"></i>
+            Set Category Limit
+        </h4>
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="id_category">Category</label>
+                {{ budget_form.category }}
+            </div>
+            <div class="form-group">
+                <label for="id_limit_amount">Monthly Budget Limit ({{ prefs.currency_symbol }})</label>
+                {{ budget_form.limit_amount }}
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;">
+                <i class="fa-solid fa-save"></i> Save Budget Limit
+            </button>
+        </form>
+    </div>
+
+    <!-- Right Panel: Active Budgets -->
+    <div class="glass-panel" style="padding: 28px; flex: 2; min-width: 320px;">
+        <h4 style="font-size: 18px; font-weight: 700; margin-bottom: 20px;">
+            <i class="fa-solid fa-bars-progress" style="color: var(--color-success); margin-right: 8px;"></i>
+            Active Budget Thresholds
+        </h4>
+
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            {% for item in budget_list %}
+            <div class="budget-row-card glass-panel" style="padding: 16px; position: relative;" id="budget-row-{{ item.budget_id|default:'0' }}">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-weight: 600; font-size: 15px;">
+                        <i class="fa-solid fa-tag" style="color: var(--color-primary); font-size: 12px; margin-right: 6px;"></i>
+                        {{ item.category }}
+                    </span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 13px; color: var(--text-secondary);">
+                            {{ prefs.currency_symbol }}{{ item.spent|floatformat:2 }} /
+                            {% if item.limit > 0 %}
+                                {{ prefs.currency_symbol }}{{ item.limit|floatformat:2 }}
+                            {% else %}
+                                <span style="font-style: italic; color: var(--text-muted);">No limit</span>
+                            {% endif %}
+                        </span>
+                        {% if item.budget_id %}
+                        <button onclick="openEditBudget('{{ item.budget_id }}', '{{ item.category }}', '{{ item.limit }}')"
+                            class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px; height: 28px;">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button onclick="openDeleteBudget('{{ item.budget_id }}', '{{ item.category }}')"
+                            class="btn" style="padding: 4px 10px; font-size: 12px; height: 28px; background: rgba(239,68,68,0.12); color: var(--color-danger); border: 1px solid rgba(239,68,68,0.3);">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if item.limit > 0 %}
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill {% if item.percentage >= 100 %}danger{% elif item.percentage >= 80 %}warning{% endif %}"
+                        style="width: {{ item.percentage }}%"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                    <span>{{ item.percentage }}% utilized</span>
+                    {% if item.spent > item.limit %}
+                        <span style="color: var(--color-danger); font-weight: 600;">
+                            Over budget by {{ prefs.currency_symbol }}{{ item.over_by|floatformat:2 }}!
+                        </span>
+                    {% else %}
+                        <span>{{ prefs.currency_symbol }}{{ item.remaining|floatformat:2 }} remaining</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            {% empty %}
+            <div style="text-align: center; color: var(--text-muted); padding: 40px 0;">
+                <i class="fa-solid fa-bullseye" style="font-size: 40px; margin-bottom: 12px; opacity: 0.3;"></i>
+                <div>No budgets set yet. Use the form to add your first budget limit!</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Edit Budget Modal -->
+<div id="editBudgetModal" class="modal-overlay" style="display:none;">
+    <div class="modal-dialog glass-panel" style="max-width: 420px; padding: 32px;">
+        <h4 style="font-weight: 700; margin-bottom: 20px;">
+            <i class="fa-solid fa-pen" style="color: var(--color-primary); margin-right: 8px;"></i>
+            Edit Budget Limit
+        </h4>
+        <div class="form-group">
+            <label>Category</label>
+            <input type="text" id="editBudgetCategory" class="form-control" readonly
+                style="background: rgba(255,255,255,0.05); cursor: not-allowed;">
+        </div>
+        <div class="form-group">
+            <label>New Limit Amount ({{ prefs.currency_symbol }})</label>
+            <input type="number" id="editBudgetAmount" class="form-control" placeholder="Enter new limit" min="0" step="0.01">
+        </div>
+        <div style="display: flex; gap: 12px; margin-top: 20px;">
+            <button onclick="submitEditBudget()" class="btn btn-primary" style="flex:1; justify-content: center;">
+                <i class="fa-solid fa-save"></i> Update Limit
+            </button>
+            <button onclick="closeModal('editBudgetModal')" class="btn btn-secondary" style="flex:1; justify-content: center;">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Budget Confirmation Modal -->
+<div id="deleteBudgetModal" class="modal-overlay" style="display:none;">
+    <div class="modal-dialog glass-panel" style="max-width: 400px; padding: 32px; text-align: center;">
+        <div style="font-size: 48px; margin-bottom: 16px;">🗑️</div>
+        <h4 style="font-weight: 700; margin-bottom: 10px;">Delete Budget?</h4>
+        <p style="color: var(--text-secondary); margin-bottom: 24px;" id="deleteBudgetMsg">
+            This will permanently remove the budget limit.
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+            <button onclick="submitDeleteBudget()" class="btn"
+                style="background: var(--color-danger); color: white; padding: 10px 24px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-trash"></i> Yes, Delete
+            </button>
+            <button onclick="closeModal('deleteBudgetModal')" class="btn btn-secondary">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let activeBudgetId = null;
+
+    function openEditBudget(budgetId, category, limit) {
+        activeBudgetId = budgetId;
+        document.getElementById('editBudgetCategory').value = category;
+        document.getElementById('editBudgetAmount').value = limit;
+        document.getElementById('editBudgetModal').style.display = 'flex';
+    }
+
+    function openDeleteBudget(budgetId, category) {
+        activeBudgetId = budgetId;
+        document.getElementById('deleteBudgetMsg').textContent =
+            `Are you sure you want to delete the "${category}" budget limit? This cannot be undone.`;
+        document.getElementById('deleteBudgetModal').style.display = 'flex';
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).style.display = 'none';
+        activeBudgetId = null;
+    }
+
+    function submitEditBudget() {
+        const newLimit = document.getElementById('editBudgetAmount').value;
+        if (!newLimit || parseFloat(newLimit) < 0) {
+            alert('Please enter a valid limit amount.');
+            return;
+        }
+        const fd = new FormData();
+        fd.append('budget_id', activeBudgetId);
+        fd.append('limit_amount', newLimit);
+        fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch("{% url 'edit_budget_ajax' %}", { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    closeModal('editBudgetModal');
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            });
+    }
+
+    function submitDeleteBudget() {
+        const fd = new FormData();
+        fd.append('budget_id', activeBudgetId);
+        fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch("{% url 'delete_budget_ajax' %}", { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    closeModal('deleteBudgetModal');
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            });
+    }
+
+    // Close modal on background click
+    document.querySelectorAll('.modal-overlay').forEach(el => {
+        el.addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.style.display = 'none';
+                activeBudgetId = null;
+            }
+        });
+    });
+</script>
+{% endblock %}

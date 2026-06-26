@@ -1,0 +1,245 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ prefs.theme|default:'dark' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SmartSpend{% endblock %} - Monthly Expenses Made Simple</title>
+    
+    <!-- CDNs: FontAwesome & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    
+    <!-- PWA Manifest & Icons -->
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <meta name="theme-color" content="#6366f1">
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="app-container">
+        {% if user.is_authenticated %}
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-logo">
+                <i class="fa-solid fa-wallet"></i>
+                <span>SmartSpend</span>
+            </div>
+            
+            <ul class="nav-menu">
+                <li>
+                    <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                        <i class="fa-solid fa-chart-pie"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'history' %}" class="nav-link {% if request.resolver_match.url_name == 'history' %}active{% endif %}">
+                        <i class="fa-solid fa-list-ul"></i>
+                        <span>History</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'analytics' %}" class="nav-link {% if request.resolver_match.url_name == 'analytics' %}active{% endif %}">
+                        <i class="fa-solid fa-chart-line"></i>
+                        <span>Analytics</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'budget_planner' %}" class="nav-link {% if request.resolver_match.url_name == 'budget_planner' %}active{% endif %}">
+                        <i class="fa-solid fa-bullseye"></i>
+                        <span>Budgets</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'settings' %}" class="nav-link {% if request.resolver_match.url_name == 'settings' %}active{% endif %}">
+                        <i class="fa-solid fa-sliders"></i>
+                        <span>Settings</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'profile' %}" class="nav-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+                        <i class="fa-solid fa-user-gear"></i>
+                        <span>Profile</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'team_management' %}" class="nav-link {% if request.resolver_match.url_name == 'team_management' %}active{% endif %}">
+                        <i class="fa-solid fa-building-user"></i>
+                        <span>Business Team</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'affiliate_offers' %}" class="nav-link {% if request.resolver_match.url_name == 'affiliate_offers' %}active{% endif %}">
+                        <i class="fa-solid fa-tags"></i>
+                        <span>Financial Offers</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'support_page' %}" class="nav-link {% if request.resolver_match.url_name == 'support_page' %}active{% endif %}">
+                        <i class="fa-solid fa-headset"></i>
+                        <span>Support Desk</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'marketplace' %}" class="nav-link {% if request.resolver_match.url_name == 'marketplace' %}active{% endif %}">
+                        <i class="fa-solid fa-store"></i>
+                        <span>Marketplace</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'forum_page' %}" class="nav-link {% if request.resolver_match.url_name == 'forum_page' or request.resolver_match.url_name == 'forum_detail' %}active{% endif %}">
+                        <i class="fa-solid fa-comments"></i>
+                        <span>Community Forum</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'mobile_preview' %}" class="nav-link {% if request.resolver_match.url_name == 'mobile_preview' %}active{% endif %}">
+                        <i class="fa-solid fa-mobile-screen-button"></i>
+                        <span>Mobile Simulator</span>
+                    </a>
+                </li>
+                
+                {% if user.is_staff or user.profile.role in 'super_admin,admin,support_staff' %}
+                <li>
+                    <a href="{% url 'admin_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+                        <i class="fa-solid fa-user-shield"></i>
+                        <span>Admin Console</span>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+            
+            <div style="margin-top: auto;">
+                <a href="{% url 'logout' %}" class="nav-link" style="color: var(--color-danger);">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </aside>
+        {% endif %}
+        
+        <!-- Main Panel Content -->
+        <main class="main-content" style="{% if not user.is_authenticated %}margin-left: 0; padding: 0;{% endif %}">
+            {% if user.is_authenticated %}
+            <!-- Top Nav Bar -->
+            <header class="top-header">
+                <div>
+                    <button class="mobile-nav-toggle" id="mobile-toggle" onclick="toggleSidebar()">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <h2 style="font-size: 24px; margin-top: 4px;">{% block page_title %}Dashboard{% endblock %}</h2>
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <!-- Theme quick switch -->
+                    <button onclick="toggleTheme()" class="btn btn-secondary" style="border-radius: 50%; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                        <i id="theme-icon" class="fa-solid {% if prefs.theme == 'light' %}fa-moon{% else %}fa-sun{% endif %}"></i>
+                    </button>
+                    
+                    <a href="{% url 'profile' %}" class="user-profile-widget glass-panel" style="text-decoration: none; color: inherit; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+                        <div class="user-avatar">
+                            {{ user.username|make_list|first|upper }}
+                        </div>
+                        <div style="text-align: left; font-size: 14px; line-height: 1.2;">
+                            <div style="font-weight: 600;">{{ user.username }}</div>
+                            <div style="color: var(--text-secondary); font-size: 11px;">{{ user.email }}</div>
+                        </div>
+                    </a>
+                </div>
+            </header>
+            {% endif %}
+            
+            <!-- Page-specific block content -->
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    
+    <!-- Global Helper Scripts -->
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) {
+                sidebar.classList.toggle('open');
+            }
+        }
+        
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme') || 'dark';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            // Set local attribute
+            html.setAttribute('data-theme', newTheme);
+            
+            // Update icon
+            const icon = document.getElementById('theme-icon');
+            if (icon) {
+                icon.className = newTheme === 'light' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+            }
+            
+            // Post update to settings view using fetch
+            fetch("{% url 'settings' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: new URLSearchParams({
+                    'theme': newTheme,
+                    'currency': '{{ prefs.currency }}',
+                    'language': '{{ prefs.language }}',
+                    'voice_rate': '{{ prefs.voice_rate }}',
+                    {% if prefs.notifications_enabled %}'notifications_enabled': 'on'{% endif %}
+                })
+            });
+        }
+        
+        // Register Service Worker for PWA (Offline functionality)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(reg => console.log('Service Worker Registered!', reg))
+                    .catch(err => console.error('Service Worker registration failed:', err));
+            });
+        }
+
+        // Cookie consent banner logic
+        function checkCookieConsent() {
+            if (!localStorage.getItem('smartspend_cookies_accepted')) {
+                document.getElementById('cookie-consent-banner').style.display = 'flex';
+            }
+        }
+        
+        function acceptCookies() {
+            localStorage.setItem('smartspend_cookies_accepted', 'true');
+            document.getElementById('cookie-consent-banner').style.display = 'none';
+        }
+        
+        function declineCookies() {
+            localStorage.setItem('smartspend_cookies_accepted', 'false');
+            document.getElementById('cookie-consent-banner').style.display = 'none';
+        }
+        
+        window.addEventListener('load', checkCookieConsent);
+    </script>
+    
+    <!-- Cookie Consent Banner Markup -->
+    <div id="cookie-consent-banner" class="glass-panel" style="position: fixed; bottom: 24px; left: 24px; right: 24px; max-width: 600px; margin: 0 auto; padding: 20px 24px; display: none; justify-content: space-between; align-items: center; gap: 20px; z-index: 99999; border: 1px solid var(--border-color); background: var(--bg-card); backdrop-filter: var(--blur-effect); box-shadow: var(--shadow-card); border-radius: 16px; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 250px; text-align: left;">
+            <h5 style="font-size: 14px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; color: var(--color-primary);">
+                <i class="fa-solid fa-cookie-bite"></i> Cookie Preferences
+            </h5>
+            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin: 0;">We use cookies to optimize your dashboard preferences, theme styles, and active secure sessions. By using SmartSpend, you consent to our cookies.</p>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: center;">
+            <button class="btn btn-secondary" onclick="declineCookies()" style="font-size: 11px; padding: 6px 12px; border-radius: 20px;">Decline</button>
+            <button class="btn btn-primary" onclick="acceptCookies()" style="font-size: 11px; padding: 6px 16px; border-radius: 20px; background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%); border: none;">Accept All</button>
+        </div>
+    </div>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

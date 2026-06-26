@@ -1,0 +1,96 @@
+{% extends 'expenses/base.html' %}
+{% block title %}Account Security - SmartSpend{% endblock %}
+{% block page_title %}Security Settings{% endblock %}
+
+{% block content %}
+<div class="support-container" style="max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px;">
+    <!-- MFA Section -->
+    <div class="glass-panel" style="padding: 28px; border-radius: 16px;">
+        <h4 style="font-size: 18px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-shield-halved" style="color: var(--color-primary);"></i>
+            Two-Factor Authentication (MFA)
+        </h4>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">
+            Secure your SmartSpend account with temporary One-Time Passwords (OTP) generated on login.
+        </p>
+        
+        <form method="POST" style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+            {% csrf_token %}
+            <div>
+                <span style="font-size: 14px; font-weight: 600; color: var(--text-primary);">Enable Login MFA Protection</span>
+                <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px; margin-bottom: 0;">An OTP verification screen will appear for every login attempt.</p>
+            </div>
+            <label class="switch" style="position: relative; display: inline-block; width: 50px; height: 26px;">
+                <input type="checkbox" name="mfa_enabled" onchange="this.form.submit()" {% if profile.mfa_enabled %}checked{% endif %} style="opacity: 0; width: 0; height: 0;">
+                <span class="slider" style="position: absolute; cursor: pointer; inset: 0; background-color: rgba(255,255,255,0.1); transition: .4s; border-radius: 34px; border: 1px solid var(--border-color);"></span>
+            </label>
+        </form>
+    </div>
+
+    <!-- Active Sessions Section -->
+    <div class="glass-panel" style="padding: 28px; border-radius: 16px;">
+        <h4 style="font-size: 18px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-laptop-code" style="color: var(--color-success);"></i>
+            Active Device Sessions
+        </h4>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">
+            Review and manage devices currently authorized to access your SmartSpend account.
+        </p>
+        
+        <div class="data-table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Device details</th>
+                        <th>IP Address</th>
+                        <th>Last Active</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for session in device_sessions %}
+                    <tr>
+                        <td>
+                            <div style="font-weight: 600; font-size: 14px; color: var(--text-primary);">
+                                {% if "Windows" in session.user_agent %}Windows Desktop{% elif "Mac" in session.user_agent %}MacBook OS{% elif "Linux" in session.user_agent %}Linux Server{% elif "iPhone" in session.user_agent or "Android" in session.user_agent %}Mobile Phone{% else %}Web browser{% endif %}
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-muted); max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ session.user_agent }}</div>
+                        </td>
+                        <td style="font-family: monospace; font-size: 13px;">{{ session.ip_address|default:"Unknown IP" }}</td>
+                        <td style="font-size: 13px; color: var(--text-secondary);">{{ session.last_activity|timesince }} ago</td>
+                        <td>
+                            <a href="{% url 'revoke_device_session' session.id %}" class="btn btn-danger" style="padding: 6px 12px; font-size: 12px; border-radius: 6px;">Revoke</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: var(--text-muted); font-style: italic; padding: 20px;">No other device sessions found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+/* CSS toggle switch styling */
+input:checked + .slider {
+    background-color: var(--color-primary) !important;
+}
+input:checked + .slider:before {
+    transform: translateX(24px) !important;
+}
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+</style>
+{% endblock %}

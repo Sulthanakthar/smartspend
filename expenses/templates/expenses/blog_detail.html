@@ -1,0 +1,31 @@
+{% extends 'expenses/base.html' %}
+{% block title %}{{ post.title }} - SmartSpend Blog{% endblock %}
+{% block page_title %}Blog Post{% endblock %}
+
+{% block content %}
+<div class="support-container" style="max-width: 800px; margin: 0 auto; margin-bottom: 60px;">
+    <!-- Back to blog link -->
+    <a href="{% url 'blog_list' %}" style="text-decoration: none; color: var(--text-secondary); font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 24px; transition: var(--transition);">
+        <i class="fa-solid fa-arrow-left"></i> Back to Blog Articles
+    </a>
+
+    <article class="glass-panel" style="padding: 40px; border-radius: 24px; border-color: rgba(99,102,241,0.15);">
+        <header style="margin-bottom: 28px; border-bottom: 1px solid var(--border-color); padding-bottom: 24px;">
+            <div style="display: flex; gap: 12px; align-items: center; font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+                <span class="badge" style="background: rgba(99, 102, 241, 0.15); color: var(--color-primary); text-transform: uppercase; font-weight: 700;">{{ post.get_category_display }}</span>
+                <span>&bull;</span>
+                <span>Published on {{ post.created_at|date:"F d, Y" }}</span>
+                <span>&bull;</span>
+                <span>By <strong>{{ post.author.username }}</strong></span>
+            </div>
+            
+            <h1 style="font-size: 28px; font-weight: 800; line-height: 1.25; color: var(--text-primary);">{{ post.title }}</h1>
+        </header>
+
+        <!-- Article Body -->
+        <div style="font-size: 15px; line-height: 1.8; color: var(--text-secondary); display: flex; flex-direction: column; gap: 20px;">
+            {{ post.content|linebreaks }}
+        </div>
+    </article>
+</div>
+{% endblock %}
