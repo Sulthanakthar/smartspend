@@ -32,3 +32,4 @@ EXPOSE 8000
 
 # Run entrypoint script
 ENTRYPOINT ["/app/entrypoint.sh"]
+                
