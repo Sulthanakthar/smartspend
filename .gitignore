@@ -142,3 +142,7 @@ cython_debug/
 # OS metadata
 .DS_Store
 Thumbs.db
+
+# Local credentials
+neon_credentials.txt
+upstash_credentials.txt

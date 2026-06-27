@@ -35,8 +35,11 @@ RUN pip install --no-cache-dir \
 # Copy project files
 COPY . /app/
 
+# Make entrypoint script executable
+RUN chmod +x /app/entrypoint.sh
+
 # Expose port
 EXPOSE 8000
 
-# Run django server
-CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "smartspend_project.asgi:application"]
+# Run entrypoint script
+ENTRYPOINT ["/app/entrypoint.sh"]
