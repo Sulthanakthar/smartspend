@@ -18,19 +18,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install python dependencies
 RUN pip install --no-cache-dir --upgrade pip
-RUN pip install --no-cache-dir \
-    django \
-    reportlab \
-    openpyxl \
-    daphne \
-    channels \
-    channels-redis \
-    celery \
-    redis \
-    psutil \
-    boto3 \
-    django-storages \
-    requests
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy project files
 COPY . /app/
