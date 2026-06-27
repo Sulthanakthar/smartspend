@@ -11,10 +11,33 @@ services:
       - key: DEBUG
         value: "False"
       - key: ALLOWED_HOSTS
-        value: "*"
+        value: "smartspend-2h97.onrender.com,localhost,127.0.0.1"
       - key: DATABASE_URL
-        sync: false  # User will provide their live Neon DB URL
+        fromDatabase:
+          name: smartspend-db
+          property: connectionString
       - key: REDIS_URL
-        sync: false  # User will provide their live Upstash Redis URL
+        fromService:
+          name: smartspend-redis
+          type: redis
+          property: connectionString
       - key: SECRET_KEY
-        generateValue: true  # Render will auto-generate a secure Django SECRET_KEY
+        generateValue: true
+    buildCommand: "bash setup.sh"
+    preDeployCommand: "bash setup.sh"
+
+databases:
+  - name: smartspend-db
+    engine: postgres
+    version: "15"
+    plan: free
+    databaseName: smartspend
+    user: smartspend_user
+    ipAllowList: []
+
+caches:
+  - name: smartspend-redis
+    engine: redis
+    version: "7"
+    plan: free
+    evictionPolicy: allkeys-lru
